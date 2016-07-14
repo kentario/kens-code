@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+$choice = shift;
+
+if ($choice eq "a") {
+    print "On the moon,there is no air so astronauts need airtite soots so they donet suffucate.
+And becus they ar air tite it is hard to moov.\n";
+} else {
+    print "\n";
+}
+
