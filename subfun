@@ -1,0 +1,76 @@
+#!/usr/bin/perl
+
+print "Welcome to fun with subroutines!\n";
+
+ken(10);
+
+
+
+ken(62);
+
+
+
+ken(1);
+
+sum_from_one_to_x (10);
+
+print "Thanks for playing!\n";
+
+sub x_times_x {
+    my $x = shift;
+    print "calling x_times_x with an argument of $x does this:\n";
+    print "$x x $x = ";
+    print $x * $x;
+    print "\n";
+}
+
+
+sub hous {
+    my $X = shift;
+    print "calling hous with an argument of $X does this:\n";
+    print "$X/3 = ";
+    print $X/3;
+    print "\n";
+    foreach ($X-3 .. $X) {
+	x_times_x ($_);	
+    }
+}
+
+sub ken_3_sub {
+    my $y = shift; 
+    print "calling ken_3_sub with an argument of $y does this:\n";
+    print "$y + -$y = ";
+    print $y + -$y;
+    print "\n";
+    hous ($y);
+    
+}
+
+sub ken {
+    my $Y = shift;
+    print "calling ken with an argument of $Y does this:\n";
+    print "$Y - -$Y = ";
+    print $Y - -$Y;
+    print "\n";
+	ken_3_sub ($Y);
+}	
+
+
+sub sum_from_one_to_x {
+
+    my $input = shift;
+    my $sum = 0;
+    foreach (1 .. $input) {
+	$sum = $sum + $_;
+    }
+    print "The sum from one to $input is $sum\n";
+}
+
+sub moo {
+    my $a = shift;
+    print "calling moo with an argument of $Y does this:\n";
+    foreach ( $a+4 .. $a+13) {
+	ken_3_sub ($a);
+    }
+}     
+
