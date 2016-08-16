@@ -14,6 +14,8 @@ ken(1);
 
 sum_from_one_to_x (10);
 
+moo(1);
+
 print "Thanks for playing!\n";
 
 sub x_times_x {
@@ -69,8 +71,7 @@ sub sum_from_one_to_x {
 sub moo {
     my $a = shift;
     print "calling moo with an argument of $Y does this:\n";
-    foreach ( $a+4 .. $a+13) {
+    foreach ( $a/5 .. $a*10) {
 	ken_3_sub ($a);
     }
 }     
-
