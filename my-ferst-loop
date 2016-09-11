@@ -1,11 +1,9 @@
 #!/usr/bin/perl
 
-foreach (1..40) {
-    if ($_!=20) {
-
-	print "$_ x $_ = ";
+foreach(1..10){
+	if($_!=5){
+	print "$_ x $_ =";
 	print $_ * $_;
 	print "\n";
-    }
+	}	
 }
-
