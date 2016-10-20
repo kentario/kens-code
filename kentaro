@@ -1,0 +1,62 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		kentaro:	
+#
+#	(usage)% kentaro
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Mon Sep 12 18:34:44 2016	Steal This Program!!!
+
+sub dad {
+    return if (!@_);
+    my $dad = shift  @_;
+    print "$dad says if you ar my dad you ar dave, if you ar not my dad, you ar not my dad.\n";
+    dad ( @_);
+}
+
+my @y = ('dave', 'kentaro','tomoko', 'gaelen');
+
+dad(@y) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
