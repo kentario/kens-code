@@ -1,0 +1,105 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my @board = ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9" );
+
+print_board();
+print "Enter a number where you want to put your X\n";
+while (1) {
+    my $input = <>;
+    chomp $input;
+    if ($input =~ /(\d)/) {
+	if ($board[$1] eq "X" or $board[$1] eq "O" ) {
+	    print "$1 already has $board[$1] in it, choose a place with nothing in it.\n";
+	} else {
+	    $board[$1] = "X";
+	    print_board();
+	    print "\n";
+	    algorithm();
+	    print_board();
+	}
+    } else {
+	print "$input is not a number, try again.\n";
+    }
+}
+
+
+sub print_board {
+    print <<EOF;
+           $board[1] | $board[2] | $board[3]   
+          ---+---+---
+           $board[4] | $board[5] | $board[6]  
+          ---+---+---
+           $board[7] | $board[8] | $board[9]
+EOF
+    my $winner = is_a_win (@board);
+    if ($winner) {
+	my $who = $winner eq "X" ? "you win" : "the computer wins";
+	print "$who\n";
+	exit;
+    }
+    if ($board[1] !~ /\d/ and $board[2] !~ /\d/ and $board[3] !~ /\d/
+	and $board[4] !~ /\d/ and $board[5] !~ /\d/ and $board[6] !~ /\d/
+	and $board[7] !~ /\d/ and $board[8] !~ /\d/ and $board[9] !~ /\d/ ) {
+	print "stalemate\n";
+	exit;
+    }
+}
+
+sub is_a_win {
+    my @board = @_;
+    my $winner;
+    if ($board[1] eq $board[2] and $board[2] eq $board[3]) { $winner = $board[1]; }
+    if ($board[4] eq $board[5] and $board[5] eq $board[6]) { $winner = $board[4]; }
+    if ($board[7] eq $board[8] and $board[8] eq $board[9]) { $winner = $board[7]; }
+    if ($board[1] eq $board[4] and $board[4] eq $board[7]) { $winner = $board[1]; }
+    if ($board[2] eq $board[5] and $board[5] eq $board[8]) { $winner = $board[2]; }
+    if ($board[3] eq $board[6] and $board[6] eq $board[9]) { $winner = $board[3]; }
+    if ($board[1] eq $board[5] and $board[5] eq $board[9]) { $winner = $board[1]; }
+    if ($board[3] eq $board[5] and $board[5] eq $board[7]) { $winner = $board[3]; }
+    return $winner;
+}
+
+sub must_block {
+    foreach my $index (1 .. 9) {
+	if ($board[$index] eq "X" or $board[$index] eq "O") {
+	} else {
+	    my @test = @board;
+	    $test[$index] = "X";	    
+	    if (is_a_win (@test)) {
+		$board[$index] = "O";
+		return 1;
+	    }
+	}
+    }
+    return undef;
+}
+
+sub can_win {
+    foreach my $index (1 .. 9) {
+	if ($board[$index] eq "X" or $board[$index] eq "O") {
+	} else {
+	    my @test = @board;
+	    $test[$index] = "O";	    
+	    if (is_a_win (@test)) {
+		$board[$index] = "O";
+		return 1;
+	    }
+	}
+    }
+    return undef;
+}
+
+
+sub algorithm {
+    return if (must_block());
+    return if (can_win());
+    foreach my $index (5, 2, 4, 6, 8, 9, 7, 3, 1) {
+	if ($board[$index] eq "X" or $board[$index] eq "O") {
+	} else {
+	    $board[$index] = "O";
+	    return;
+	}
+    }
+}
