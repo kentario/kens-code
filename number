@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		number:	
+#
+#	(usage)% number
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Sat Mar 23 15:03:54 2019	Steal This Program!!!
+
+use strict;
+
+my $number = shift;
+
+print "$number x $number = ", $number * $number, "!!!!\n$number + $number = ", $number + $number, "!!!!\n$number - $number = ", $number - $number, "!!!!\n$number / $number = ", $number / $number, "!!!!\n";
+
+print "$number! = ", factorial ($number),"\n and fanaly $number = $number\n";
+
+sub factorial {
+    my $input = shift;
+    if ($input == 1){
+	return $input;
+    }
+    return $input * factorial ($input - 1);
+}
