@@ -91,10 +91,15 @@ sub can_win {
     return undef;
 }
 
+sub can_build {
+    # look for any row or diaganal that has one O and two numbers
+    return undef;
+}
 
 sub algorithm {
-    return if (must_block());
     return if (can_win());
+    return if (must_block());
+    return if (can_build());
     foreach my $index (5, 2, 4, 6, 8, 9, 7, 3, 1) {
 	if ($board[$index] eq "X" or $board[$index] eq "O") {
 	} else {

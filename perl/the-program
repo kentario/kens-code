@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		the-program:	
+#
+#	(usage)% the-program
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Sun Mar 24 16:12:56 2019	Steal This Program!!!
+
+my $word = shift;
+
+print "$word is your choice.\n";
+
+while ($word !~ /^\d+$/) {
+    print "plese enter a number ";
+    $word = <>;
+    chomp $word;
+}
+print "what is $word x (5 / ($word x 2))?    ";
+
+my $answer = <>;
+chomp $answer;
+
+my $number = $word * (5 / ($word * 2));
+
+if ($answer eq $number) {
+    print "correct!!!!\n";
+}
+else {
+    print "Wrong answer\nThe answer is $number\n";
+}
