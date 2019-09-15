@@ -68,29 +68,31 @@ foreach my $letter (@characters) {
     $letter_of_index{$index_of_letter{$letter}} = $letter;
 }
 
-my $thing = lc shift;
-#print $thing, "\n";
+my $ciphertext = shift;
+my @groups = split (/ /, $ciphertext);
 
-sub encode {
-    my $letter = shift;
+foreach my $group (@groups) {
+    decode_group($group);
+}
 
-  again:
-
-    my $offset = (int (rand ($#characters + 1)));
-    my $direction = (int (rand(2)));
-    my $index = $index_of_letter{$letter};
-    if ($direction == 0) {
+sub decode_group {
+    my $group = shift;
+#    print "$group\n";
+    my ($offset, $direction, $newletter) = split (/_/, $group);
+#    print "offset = $offset \ndirection = $direction \nnewletter = $newletter\n";
+    my $index = $index_of_letter{$newletter};
+#    print "index = $index\n";
+    if ($direction == 1) {
 	$index = $index - $offset;
     } else {
 	$index = $index + $offset;
     }
+#    print "offset index = $index\n";
     my $wrapped_index = $index % ($#characters + 1);
-    my $newletter = $letter_of_index{$wrapped_index};
-    goto again if ($newletter eq ' ');
-    return  $offset . "_" . $direction . "_" . $newletter;
+#    print "wrapped_index = $wrapped_index\n";
+    my $decoded_letter = $letter_of_index{$wrapped_index};
+#    print "decoded_letter = $decoded_letter\n";
+    print $decoded_letter;
 }
 
-foreach my $letter (split (//, $thing)) {
-    print (encode ($letter), " ");
-}
 print "\n";
