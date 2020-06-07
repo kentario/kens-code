@@ -1,0 +1,47 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		passion-project:	
+#
+#	(usage)% passion-project
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Sat Jun  6 16:43:47 2020	3.141592653589793238462643383279502
+
+use strict;
+
+my $ende = shift @ARGV;
+my $offset = shift @ARGV;
+my $string = join (" ", @ARGV);
+
+if ($ende eq 'encode') {
+    print $offset, " ";
+    encode ();
+} elsif ($ende eq 'decode') {
+    decode ();
+} else {
+    print "please use encode or decode next time.\n";
+}
+
+sub encode {
+    my @letters = split (//, $string);
+    foreach my $letter (@letters) {
+	my $number = ord ($letter);
+	$number += $offset;
+	my $letter_2 = chr ($number);
+	print $letter_2;
+    }
+    print "\n";
+}
+
+sub decode {
+    my @letters = split (//, $string);
+    foreach my $letter (@letters) {
+	my $number = ord ($letter);
+	$number -= $offset;
+	my $letter_2 = chr ($number);
+	print $letter_2;
+    }
+    print "\n";    
+}
