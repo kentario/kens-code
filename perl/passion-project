@@ -16,7 +16,7 @@ my $offset = shift @ARGV;
 my $string = join (" ", @ARGV);
 
 if ($ende eq 'encode') {
-    print $offset, " ";
+    print $offset, " '";
     encode ();
 } elsif ($ende eq 'decode') {
     decode ();
@@ -28,11 +28,17 @@ sub encode {
     my @letters = split (//, $string);
     foreach my $letter (@letters) {
 	my $number = ord ($letter);
+#	print "original number is $number\n";
 	$number += $offset;
+	if ($number > 126) {
+	    $number -= 126;
+	    $number += 31;
+	}
+#	print "the new number is $number\n";
 	my $letter_2 = chr ($number);
 	print $letter_2;
     }
-    print "\n";
+    print "'\n";
 }
 
 sub decode {
@@ -40,6 +46,10 @@ sub decode {
     foreach my $letter (@letters) {
 	my $number = ord ($letter);
 	$number -= $offset;
+	if ($number < 32) {
+	    $number = 32 - $number;
+	    $number = 127 - $number;
+	}
 	my $letter_2 = chr ($number);
 	print $letter_2;
     }
