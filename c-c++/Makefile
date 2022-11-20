@@ -1,4 +1,4 @@
-build: sdl-hello-world temporary game-of-life
+build: sdl-hello-world mandelbrot game-of-life
 
 game-of-life: game-of-life.cpp
 	g++ $< -o $@ -lSDL2
@@ -6,7 +6,7 @@ game-of-life: game-of-life.cpp
 sdl-hello-world: sdl-hello-world.cpp
 	g++ $< -o $@ -lSDL2
 
-temporary: temporary.cpp
+mandelbrot: mandelbrot.cpp
 	g++ $< -o $@ -lSDL2
 
 all: ende in-out
