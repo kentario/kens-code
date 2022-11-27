@@ -3,16 +3,48 @@
 #include <cstring>
 #include <cstdlib>
 #include <time.h>
+#include <unistd.h>
 
 using namespace std;
 
-const int width = 10;
-const int height = 10;
+const int width = 20;
+const int height = 20;
+
+void draw_scaled_point (SDL_Renderer *renderer, int scale, int x, int y, string type)
+{
+  for (int rel_y = 0; rel_y < scale; rel_y++) {
+    for (int rel_x = 0; rel_x < scale; rel_x++) {
+      if (type == "invisible") {
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+      } else if (type == "safe") {
+	SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+      } else if (type == "flag") {
+	SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+      } else if (type == "bomb") {
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+      }
+      // Draw a white border around a square regardless of type.
+      if (rel_y == 0 || rel_y == scale - 1 || rel_x == 0 || rel_x == scale - 1) {
+	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+      }
+      SDL_RenderDrawPoint(renderer, (x * scale) + rel_x, (y * scale) + rel_y);
+    }
+  }
+}
+
+void initialize_grid (SDL_Renderer *renderer, int scale) {
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+       draw_scaled_point(renderer, scale, x, y, "invisible");
+    }
+  }
+  SDL_RenderPresent(renderer);
+}
 
 void around_zero (int x, int y, bool is_visible[][height], int adjacent[][height])
 {
   for (int rel_y = -1; rel_y < 2; rel_y++) {
-    for (int rel_x = -1; rel_x <2; rel_x++) {
+    for (int rel_x = -1; rel_x < 2; rel_x++) {
       // Making sure to not check the original coordiatnes to prevent infinite loops.
       if (rel_x != 0 || rel_y != 0) {
 	int this_x = x + rel_x;
@@ -39,11 +71,12 @@ void around_zero (int x, int y, bool is_visible[][height], int adjacent[][height
 
 int main ()
 {
-  int bomb_count = 15;
+  int bomb_count = 40;
   int scale = 50;
   
   bool bombs[width][height];
   bool is_visible[width][height];
+  bool flag[width][height];
   int adjacent[width][height];
 
   // Setting up SDL2. 
@@ -65,6 +98,7 @@ int main ()
   // Settings all arrays to default settings.
   memset(bombs, false, sizeof(bombs));
   memset(is_visible, false, sizeof(is_visible));
+  memset(flag, false, sizeof(flag));
   memset(adjacent, 0, sizeof(adjacent));
   
   // Placing bombs.
@@ -96,7 +130,10 @@ int main ()
       }
     }
   }
-  
+
+  // Drawing the grid at the beginning.
+  initialize_grid(renderer, scale);
+
   while (1) {
     int squares_visible = 0;
     int input_x, input_y;
@@ -111,16 +148,22 @@ int main ()
     case SDL_MOUSEBUTTONUP:
       input_x = (event.button.x)/scale;
       input_y = (event.button.y)/scale;
-      cout << input_x << ", " << input_y << "\n";
+      if (flag[input_x][input_y]) {
+	flag[input_x][input_y] = false;
+      } else {
+	if (SDL_BUTTON(event.button.button) == 4) {
+	  if (!is_visible[input_x][input_y]) {
+	    cout << "placing flag\n";
+	    flag[input_x][input_y] = true;
+	  }
+      } else {
+	  is_visible[input_x][input_y] = true;
+	}
+      }
+      break;
     default:
       continue;
     }
-    
-    //    cout << "Enter the horizontal coordinate: ";
-    //    cin >> input_x;
-    //    cout << "Enter the vertical coordinate: ";
-    //    cin >> input_y;
-    //    is_visible[input_x][input_y] = true;
 
     // If selected square is a zero, then opening all the squares around it.
     if (adjacent[input_x][input_y] == 0) {
@@ -130,16 +173,24 @@ int main ()
     // Printing the field.
     for (int current_y = 0; current_y < height; current_y++) {
       for (int current_x = 0; current_x < width; current_x++) {
-	if (!is_visible[current_x][current_y]) {
+	if (flag[current_x][current_y]) {
+	  cout << "F";
+	  draw_scaled_point(renderer, scale, current_x, current_y, "flag");
+	} else if (!is_visible[current_x][current_y]) {
 	  cout << ".";
+	  draw_scaled_point(renderer, scale, current_x, current_y, "invisible");
 	} else if (bombs[current_x][current_y]) {
 	  cout << "*";
+	  draw_scaled_point(renderer, scale, current_x, current_y, "bomb");
 	} else {
 	  cout << adjacent[current_x][current_y];
+	  draw_scaled_point(renderer, scale, current_x, current_y, "safe");
 	}
       }
       cout << "\n";
     }
+    // Refreshing the screen.
+    SDL_RenderPresent(renderer);
     
     // Checking if the game should continue.
     for (int current_y = 0; current_y < height; current_y++) {
@@ -147,7 +198,7 @@ int main ()
 	// Checking if any bombs are visible.
 	if (bombs[current_x][current_y] && is_visible[current_x][current_y]) {
 	  cout << "Lose\n";
-	  return 0;
+	  goto done;
 	}
 	// Couting the number of visible squares.
 	if (is_visible[current_x][current_y]) {
@@ -156,10 +207,19 @@ int main ()
 	// Checking if all non-bomb squares are visible.
 	if (squares_visible + bomb_count == width * height) {
 	  cout << "Win\n";
-	  return 0;
+	  goto done;
 	}
       }
     }
   }
-  return 0;
+ done:
+  while (true) {
+    SDL_Event event;
+    while (SDL_WaitEvent(&event) != 1);
+    switch (event.type) {
+    case SDL_QUIT:
+      cout << "Quitting\n";
+      return 0;
+    }
+  }
 }
