@@ -1,4 +1,5 @@
 #include <iostream>
+#include <SDL2/SDL.h>
 #include <cstring>
 #include <cstdlib>
 #include <time.h>
@@ -39,11 +40,25 @@ void around_zero (int x, int y, bool is_visible[][height], int adjacent[][height
 int main ()
 {
   int bomb_count = 15;
+  int scale = 50;
   
   bool bombs[width][height];
   bool is_visible[width][height];
   int adjacent[width][height];
 
+  // Setting up SDL2. 
+  SDL_Init(SDL_INIT_EVERYTHING);
+  // First two numbers are the position of the window on the screen, second two numbers are the size of the screen.
+  SDL_Window *win = SDL_CreateWindow("Minesweeper", 30, 15, width * scale, height * scale, SDL_WINDOW_SHOWN);
+  SDL_Surface *screen = SDL_GetWindowSurface(win);
+  SDL_Renderer *renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_SOFTWARE);
+  // Change SDL drawing color.
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  // Fill the screen with the color.
+  SDL_RenderClear(renderer);
+  // Draw anything that has not been rendered yet. Similar to refreshing the screen.
+  SDL_RenderPresent(renderer);
+ 
   // Settings the seed of the random numbers to the current time.
   srand(time(0));
   
@@ -70,7 +85,7 @@ int main ()
 	for (int rel_x = -1; rel_x < 2; rel_x++) {
 	  int this_x = current_x + rel_x;
 	  int this_y = current_y + rel_y;
-	  // Checking if square being checked is outside of the array.
+	  // Checking if the square being checked is outside of the array.
 	  if (!(this_x < 0 || this_y < 0 || this_x >= width || this_y >= height)) {
 	    // Checking if square contains a bomb.
 	    if (bombs[this_x][this_y]) {
@@ -85,13 +100,27 @@ int main ()
   while (1) {
     int squares_visible = 0;
     int input_x, input_y;
-
+    
     // Getting user input.
-    cout << "Enter the horizontal coordinate: ";
-    cin >> input_x;
-    cout << "Enter the vertical coordinate: ";
-    cin >> input_y;
-    is_visible[input_x][input_y] = true;
+    SDL_Event event;
+    while (SDL_WaitEvent(&event) != 1);
+    switch (event.type) {
+    case SDL_QUIT:
+      cout << "Quitting\n";
+      return 0;
+    case SDL_MOUSEBUTTONUP:
+      input_x = (event.button.x)/scale;
+      input_y = (event.button.y)/scale;
+      cout << input_x << ", " << input_y << "\n";
+    default:
+      continue;
+    }
+    
+    //    cout << "Enter the horizontal coordinate: ";
+    //    cin >> input_x;
+    //    cout << "Enter the vertical coordinate: ";
+    //    cin >> input_y;
+    //    is_visible[input_x][input_y] = true;
 
     // If selected square is a zero, then opening all the squares around it.
     if (adjacent[input_x][input_y] == 0) {
@@ -102,13 +131,11 @@ int main ()
     for (int current_y = 0; current_y < height; current_y++) {
       for (int current_x = 0; current_x < width; current_x++) {
 	if (!is_visible[current_x][current_y]) {
-	  cout << "#";
+	  cout << ".";
+	} else if (bombs[current_x][current_y]) {
+	  cout << "*";
 	} else {
-	  if (bombs[current_x][current_y]) {
-	    cout << "*";
-	  } else {
-	    cout << adjacent[current_x][current_y];
-	  }
+	  cout << adjacent[current_x][current_y];
 	}
       }
       cout << "\n";
