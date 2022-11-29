@@ -1,4 +1,10 @@
-build: sdl-hello-world mandelbrot game-of-life
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2
+
+key-mouse-sdl2: key-mouse-sdl2.cpp
+	g++ $< -o $@ -lSDL2
+
+minesweeper: minesweeper.cpp
+	g++ $< -o $@ -lSDL2
 
 game-of-life: game-of-life.cpp
 	g++ $< -o $@ -lSDL2
