@@ -1,4 +1,10 @@
-build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network
+
+neural-network: neural-network.cpp
+	g++ $< -o $@
+
+draw: draw.cpp
+	g++ $< -o $@ -lSDL2
 
 key-mouse-sdl2: key-mouse-sdl2.cpp
 	g++ $< -o $@ -lSDL2
