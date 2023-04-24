@@ -1,11 +1,10 @@
 #include <iostream>
 #include <SDL2/SDL.h>
-#include <cstring>
+#include <string.h>
 
 using namespace std;
 
-void draw_scaled_point (SDL_Renderer *renderer, int scale, int x, int y, int type)
-{
+void draw_scaled_point (SDL_Renderer *renderer, int scale, int x, int y, int type) {
   // Set color to white.
   switch (type) {
   case 0:
@@ -22,12 +21,11 @@ void draw_scaled_point (SDL_Renderer *renderer, int scale, int x, int y, int typ
   }
 }
 
-int main ()
-{
-  int scale = 25;
-  int width = 50, height = 50;
+int main () {
+  int scale = 5;
+  int width = 16, height = 16;
   int type[width/scale][height/scale];
-  memset(type, 0, sizeof(type));
+  bzero(type, sizeof(type));
   
   // Set up SDL2.
   SDL_Init(SDL_INIT_EVERYTHING);
@@ -53,7 +51,7 @@ int main ()
       cout << "Quitting\n";
       return 0;
     case SDL_MOUSEMOTION:
-      cout << SDL_BUTTON(event.button.button) << "\n";
+      //cout << SDL_BUTTON(event.button.button) << "\n";
       // Scaling down the point.
       int descaled_x = (event.button.x)/scale;
       int descaled_y = (event.button.y)/scale;
