@@ -1,8 +1,8 @@
 #include <iostream>
-#include <string.h>
+#include <vector>
 #include <cmath>
-#include <cstdlib>
-#include <time.h>
+#include <random>
+
 
 using namespace std;
 
@@ -12,138 +12,129 @@ Each neuron gets its corresponding bias added to it.
 Each neuron in the next layer becomes the sum of all the neurons in the previous layer multiplied to their corresponding weights.
 The activation function is applied to each neuron of the new layer.
 Repeat for the next layer.
-
-The biases are stored at the end of the weights, so if the weigts for a neruon were 5, 3, 2, 6, then 6 would be the bias.
 */
-
-const int neurons_per_layer[] = {1, 2, 2, 3};
-const int number_of_layers = sizeof(neurons_per_layer)/sizeof(neurons_per_layer[0]);
-
-int b_max = 0;
-int c_max = 0;
-// Declare the variable that is used to access the network.
-double *network;
-//      layer, neuron, weight
-#define NETWORK(a, b, c) network[a * b_max * c_max + b * c_max + c]
 
 double sigmoid (double x) {
   return 1/(1 + exp(-x));
 }
 
 double sigmoid_derivative (double x) {
-  return sigmoid(x) * (1 - sigmoid(x));
+  double sigmoid_x = sigmoid(x);
+  return sigmoid_x * (1 - sigmoid_x);
 }
 
-double cost_function (double desired_output[], double real_output[]) {
-  double cost = 0;
-  for (int i = 0; i < neurons_per_layer[number_of_layers - 1]; i++) {
-    cost += (real_output[i] - desired_output[i]) * (real_output[i] - desired_output[i]);
-  }
-  return cost;
+double random_number () {
+  // I don't really know how this works, but apparently it works well.
+  static default_random_engine generator;
+  static uniform_real_distribution<double> distribution(0, 1.0);
+  return distribution(generator);
 }
 
-void print_network () {
-  cout << "\nInput Layer (Layer 0) has no weights.";
-  // Loop through each layer in the network
-  for (int current_layer = 1; current_layer < number_of_layers; current_layer++) {
-    // Printing out the current layer number.
-    cout << "\nLayer " << current_layer << ": ";
-    // Loop through each neuron in the current layer.
-    for (int current_neuron = 0; current_neuron < neurons_per_layer[current_layer]; current_neuron++) {
-      // Print out the current neuron number.
-      cout << " Neuron " << current_neuron << ": ";
-      // Loop through each weight (and bias) of the current neuron.
-      for (int current_weight = 0; current_weight < neurons_per_layer[current_layer- 1] + 1; current_weight++) {
-	// Printing out the current weight (or bias).
-	cout << NETWORK(current_layer, current_neuron, current_weight) << " ";
+class layer {
+private:
+  vector<vector<double>> weights;
+  vector<double> biases;
+  int num_neurons;
+  int num_inputs;
+public:
+  layer (int num_inputs, int num_neurons) :
+    num_neurons(num_neurons), num_inputs(num_inputs),
+    weights(num_neurons, vector<double>(num_inputs)), biases(num_neurons) {}
+  
+  void initialize_layer_randomly () {
+    // Loop over every neuron that the weights output to.
+    for (int output = 0; output < num_neurons; output++) {
+      // Loop over every neuron that gets fed into the weights.
+      for (int input = 0; input < num_inputs; input++) {
+	// Randomize each weight.
+	weights[output][input] = random_number();
       }
+      // There will be one bias for each neuron that the weights output to.
+      biases[output] = random_number();
     }
   }
-  cout << "\n";
-}
-
-void initialize_network () {
-  // Creating the weights from one layer to the next, the input layer has no weights.
-  // Looping through each layer except the input layer.
-  for (int current_layer = 1; current_layer < number_of_layers; current_layer++) {
-    for (int current_neuron = 0; current_neuron < neurons_per_layer[current_layer]; current_neuron++) {
-      // Looping through every input neuron, plus one.
-      for (int input_neuron = 0; input_neuron < neurons_per_layer[current_layer- 1] + 1; input_neuron++) {
-	// Assigning a random number between 0 and 1 as the weight and bias.
-	NETWORK(current_layer, current_neuron, input_neuron) = (double)random()/(double)RAND_MAX;
+  
+  vector<double> calculate_layer_outputs (const vector<double> inputs) {
+    vector<double> weighted_outputs;
+    weighted_outputs.resize(num_neurons);
+    for (int output = 0; output < num_neurons; output++) {
+      // Loop over every weighted output.
+      // Set the weighted output as the bias because it is the same as just adding the bias to 0.
+      weighted_outputs[output] = biases[output];
+      for (int input = 0; input < num_inputs; input++) {
+	// Loops over each input, and multiply it by its corresponding weight, and then add it to the weighted output.
+	weighted_outputs[output] += inputs[input] * weights[output][input];
       }
+      // Once the weighted outputs are calculated, apply the activation function.
+      weighted_outputs[output] = sigmoid(weighted_outputs[output]);
     }
-  }
-}
-
-void forward_propagate (double input[], double *output_location) {
-  double input_buffer[b_max];
-  double output_buffer[b_max];
-  bzero(input_buffer, sizeof(input_buffer));
-  bzero(output_buffer, sizeof(output_buffer));
-  for (int i = 0; i < neurons_per_layer[0]; i++) {
-    input_buffer[i] = input[i];
+    return weighted_outputs;
   }
   
-  // Propogate input through each network.
-  for (int current_layer = 1; current_layer < number_of_layers; current_layer++) {
-    // Loop through each neuron in the current layer.
-    for (int current_neuron = 0; current_neuron < neurons_per_layer[current_layer]; current_neuron++) {
-      // Add the bias.
-      output_buffer[current_neuron] = NETWORK(current_layer, current_neuron, neurons_per_layer[current_layer] - 1);
-      // Loop through each input.
-      for (int current_input = 0; current_input < neurons_per_layer[current_layer- 1]; current_input++) {
-	// Multiplying input by the corresponding weight.
-	output_buffer[current_neuron] += NETWORK(current_layer, current_neuron, current_input) * input_buffer[current_input];
+  void print_layer () {
+    for (const auto &output : weights) {
+      // This for loop loops over every neuron that this layer of weights outputs to.
+      cout << "Weights: ";
+      for (const auto &weight : output) {
+	// This for loop loops over every weight that is connected to the neuron.
+	// Print out the weight.
+	cout << weight << " ";
       }
-      // Applying the activation function to each output.
-      output_buffer[current_neuron] = sigmoid(output_buffer[current_neuron]);
-    }
-    // Transfer the output buffer into the input buffer.
-    for (int i = 0; i < neurons_per_layer[current_layer]; i++) {
-      input_buffer[i] = output_buffer[i];
+      // To get the index of the loop, subtract the starting location from the current location.
+      cout << "Bias " << &output - &weights[0] << ": " << biases[&output - &weights[0]] << " ";
     }
   }
+};
 
-  // Copy the output from the output buffer to the output location.
-  for (int i = 0; i < neurons_per_layer[number_of_layers - 1]; i++) {
-    output_location[i] = output_buffer[i];
-  }
-}
-
-int main ()
-{
-  srand(time(0));
-
-  int max_neurons_per_layer = -1;
-  for (int i = 0; i < sizeof(neurons_per_layer)/sizeof(neurons_per_layer[0]); i++) {
-    if (neurons_per_layer[i] > max_neurons_per_layer) {
-      max_neurons_per_layer = neurons_per_layer[i];
+class network {
+private:
+  vector<layer> layers;
+  int num_layers;
+public:
+  network (int layer_sizes[], int num_layers) :
+    num_layers(num_layers) {
+    for (int i = 1; i < num_layers; i++) {
+      // I starts at 1 because the input layer doesn't have any weights or biases, but the size of the input layer is recorded.
+      // Add a layer to the end of the list of layers.
+      layers.push_back(layer(layer_sizes[i - 1], layer_sizes[i]));
     }
   }
-  b_max = max_neurons_per_layer;
-  c_max = max_neurons_per_layer + 1;
   
-  // Allocate enough memory for the network.
-  double network_alloc[number_of_layers][b_max][c_max];
-  // Assign the variable used to access the network.
-  network = (double *) network_alloc;
-  
-  initialize_network();
-  
-  // Printing out the network.
-  print_network();
-
-  // Crate input.
-  double input[neurons_per_layer[0]] = {1, 0};
-  // Create output.
-  double output[neurons_per_layer[number_of_layers - 1]];
-  // Propogate forward.
-  forward_propagate(input, output);
-  // Print the output.
-  for (int i = 0; i < neurons_per_layer[number_of_layers - 1]; i++) {
-    printf("Output[%d] = %.20f\n", i, output[i]);
+  void initialize_network_randomly () {
+    for (auto &layer : layers) {
+      // For each layer, randomize its weights and biases.
+      layer.initialize_layer_randomly();
+    }
   }
+  
+  void calculate_network_outputs (vector<double> &inputs) {
+    for (int layer = 0; layer < num_layers - 1; layer++) {
+      // num_layers - 1 because we don't have to calculate anything for the input layer.
+      // Loops over every layer - 1, calculates the outputs of that layer, and that output becomes the new input for the next layer.
+      inputs = layers[layer].calculate_layer_outputs(inputs);
+    }
+  }
+  
+  void print_network () {
+    // Input layer has no weights and biases.
+    cout << "Input layer (layer 0) has no weights and biases.\n";
+    for (int layer = 0; layer < num_layers - 1; layer++) {
+      // Looping over each layer - 1.
+      // Because the input layer doesn't get printed, the layer with index 0 is actually the 1st layer, not the 0th layer.
+      cout << "Layer " << layer + 1 << ": ";
+      layers[layer].print_layer();
+      cout << "\n";
+    }
+  }
+};
 
+int main() {
+  int layer_sizes[] = {2, 3, 3, 2};
+  int num_layers = sizeof(layer_sizes)/sizeof(layer_sizes[0]);
+  network my_network(layer_sizes, num_layers);
+  
+  my_network.initialize_network_randomly();
+  my_network.print_network();
+  
   return 0;
 }
