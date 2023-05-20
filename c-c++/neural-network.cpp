@@ -77,7 +77,7 @@ private:
 
   // The inputs to the layer.
   vector<double> inputs;
-  // The weighted sums of the inputs bewfore being passed through the activation function.
+  // The weighted sums of the inputs before being passed through the activation function.
   vector<double> preactivations;
   // Output values of the layer.
   vector<double> activations;
