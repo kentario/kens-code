@@ -142,13 +142,16 @@ public:
   
   // Initialize the layers weights and biases randomly to a value between -1 and 1.
   void initialize_layer_randomly () {
-    for (auto &output : weights) {
+    int output_index = 0;
+    
+    for (auto &weights_for_this_output : weights) {
       // This loops over every neuron that this layer outputs to.
-      for (auto &weight : output) {
+      for (auto &weight : weights_for_this_output) {
 	weight = random_number();
       }
-      // To get the index of the loop, subtract the starting location from the current location.
-      biases[&output - &weights[0]] = random_number();
+      biases[output_index] = random_number();
+
+      output_index++;
     }
   }
   
@@ -180,18 +183,24 @@ public:
   
   // Applies the gradient to each weight and bias, effectively moving the cost downhill.
   void apply_gradients (const double learn_rate) {
+    int output_index = 0;
+    
     // I multiply the gradients by the learn rate, so that it won't overshoot the minimum, and to tweak with the step size in downhill.
-    for (auto &output : weights) {
+    for (auto &weights_for_this_output : weights) {
+      int input_index = 0;
+      
       // This loops over every neuron that this layer outputs to.
-      for (auto &weight : output) {
+      for (auto &weight : weights_for_this_output) {
 	// This for loop loops over every weight that is connected to the output neuron.
 	// Subtracting the slope of the weight makes the cost move downhill.
-	// &weight - &output[0] gets the index of the inner loop.
-	weight -= weight_cost_gradients[&output - &weights[0]][&weight - &output[0]] * learn_rate;
+	weight -= weight_cost_gradients[output_index][input_index] * learn_rate;
+
+	input_index++;
       }
-      // &output - &weights[0] gives the index of the outer loop.
       // Subtracting the slope of the bias makes the cost move downhill.
-      biases[&output - &weights[0]] -= bias_cost_gradients[&output - &weights[0]] * learn_rate;
+      biases[output_index] -= bias_cost_gradients[output_index] * learn_rate;
+
+      output_index++;
     }
   }
 
@@ -222,69 +231,85 @@ public:
     vector<double> new_node_values;
     new_node_values.resize(num_neurons);
 
+    int new_node_index = 0;
+
     for (auto &new_node_value : new_node_values) {
       new_node_value = 0;
       for (int old_node = 0; old_node < num_old_nodes; old_node++) {
 	// &new_node_value - &new_node_values[0] gives the index of the outer loop.
-	new_node_value += old_layer.get_weights(old_node, (&new_node_value - &new_node_values[0])) * old_node_values[old_node];
+	new_node_value += old_layer.get_weights(old_node, new_node_index) * old_node_values[old_node];
       }
       // &new_node_value - &new_node_values[0] gives the index of the outer loop.
-      new_node_value *= leaky_relu_derivative(preactivations[&new_node_value - &new_node_values[0]]);
+      new_node_value *= leaky_relu_derivative(preactivations[new_node_index]);
+      
+      new_node_index++;
     }
     
     return new_node_values;
   }
 
   void clear_gradients () {
-    for (auto &output : weight_cost_gradients) {
+    int output_index = 0;
+    
+    for (auto &wcgradients_for_this_output : weight_cost_gradients) {
       // Loop over every neuron that this layer outputs to.
-      for (auto &weight_cost_gradient : output) {
+      for (auto &weight_cost_gradient : wcgradients_for_this_output) {
 	// Loop over weight cost gradient that connects to the output.
-	// Set the weight gradient to 0.
+	// Set the weight cost gradient to 0.
 	weight_cost_gradient = 0;
       }
-      // &output - &weight_cost_gradients[0] gives the index of the outer loop.
-      // Set the bias gradient to 0.
-      bias_cost_gradients[&output - &weight_cost_gradients[0]] = 0;
+      // Set the bias cost gradient to 0.
+      bias_cost_gradients[output_index] = 0;
+      
+      output_index++;
     }
   }
 
   void update_gradients (vector<double> node_values) {
-    for (auto &output : weight_cost_gradients) {
+    int output_index = 0;
+    
+    for (auto &wcgradients_for_this_output : weight_cost_gradients) {
+      int input_index = 0;
+      
       // Loop over each weight cost gradient.
-      for (auto &weight_cost_gradient : output) {
+      for (auto &weight_cost_gradient : wcgradients_for_this_output) {
 	// Evaluate the partial derivative cost/weight of the current weight.
-	// &output - &weight_cost_gradients[0] gives the index of the outer loop.
-	// &weight_cost_gradient - &output[0] gives the index of the inner loop.
-	double derivative_cost_wrt_weight = inputs[&weight_cost_gradient - &output[0]] * node_values[&output - &weight_cost_gradients[0]];
-	//	cout << &output - &weight_cost_gradients[0] << " " << node_values[&output - &weight_cost_gradients[0]] << "\n";
+	double derivative_cost_wrt_weight = inputs[input_index] * node_values[output_index];
 	weight_cost_gradient += derivative_cost_wrt_weight;
+
+	input_index++;
       }
       // The partial derivative of cost/bias is just 1, becuase the bias isn't multiplied by anything.
       // This makes the derivative of the cost with respect to the bias just the node value.
-      // &output - &weight_cost_gradients[0] gives the index of the outer loop.
-      bias_cost_gradients[&output - &weight_cost_gradients[0]] += node_values[&output - &weight_cost_gradients[0]];
+      bias_cost_gradients[output_index] += node_values[output_index];
+
+      output_index++;
     }
   }
 
   // Prints all the weight and bias gradients of the layer.
   void print_gradients () {
     int bias_gradient_index = 0;
-    for (const auto &weights_for_this_output : weight_cost_gradients) {
+    
+    for (const auto &wcgradients_for_this_output : weight_cost_gradients) {
       // This loops over every set of weights that connect to this output.
       cout << "Weight Gradients: ";
-      for (const auto &weight_cost_gradient : weights_for_this_output) {
+      for (const auto &weight_cost_gradient : wcgradients_for_this_output) {
 	// This for loop loops over every weight that is connected to the neuron.
-	// Print out the weight.
+	// Print out the weight cost gradient.
 	cout << weight_cost_gradient << " ";
       }
+      // Print out the bias cost gradient.
       cout << "Bias Gradient " << bias_gradient_index << ": " << bias_cost_gradients[bias_gradient_index] << " ";
+      
       bias_gradient_index++;
     }
   }
   
   // Prints all the weights and biases of the layer.
   void print_layer () {
+    int bias_index = 0;
+    
     for (const auto &weights_for_this_output : weights) {
       // This loops over every set of weights that connect to this output.
       cout << "Weights: ";
@@ -293,8 +318,10 @@ public:
 	// Print out the weight.
 	cout << weight << " ";
       }
-      // To get the index of the loop, subtract the starting location from the current location.
-      cout << "Bias " << &weights_for_this_output - &weights[0] << ": " << biases[&weights_for_this_output - &weights[0]] << " ";
+      // Print out the bias.
+      cout << "Bias " << bias_index << ": " << biases[bias_index] << " ";
+
+      bias_index++;
     }
   }
 };
@@ -339,10 +366,14 @@ public:
     double cost = 0;
     
     Layer &output_layer = layers[layers.size() - 1];
+
+    int output_index = 0;
     
     for (const auto &output : outputs) {
-      // &output - &outputs[0] gives the index of the loop.
-      cost += output_layer.calculate_neuron_cost(output, data_point.outputs[&output - &outputs[0]]);
+      // Add up the individual neuron costs to get the total cost.
+      cost += output_layer.calculate_neuron_cost(output, data_point.outputs[output_index]);
+
+      output_index++;
     }
     
     return cost;
@@ -351,10 +382,13 @@ public:
   // Calculates the average cost of an array of data points.
   double calculate_average_data_cost (Data_Point data[], const int num_data_points) {
     double total_cost = 0;
+    
     for (int data_point = 0; data_point < num_data_points; data_point++) {
+      // Add up all the data point costs to get the total cost.
       total_cost += calculate_data_point_cost(data[data_point]);
     }
-    
+
+    // Divide the total cost by the number of data points to get the average cost.
     return total_cost/num_data_points;
   }
   
@@ -501,19 +535,16 @@ int main () {
   cout << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
 
   int num_iterations = 10000;
-  //int num_iterations = 1;
+
   for (int i = 0; i < num_iterations; i++) {
     my_network.learn(data, num_data_points, 0.1);
-    /*my_network.initialize_network_randomly();
-    my_network.print_network();
-    my_network.alearn(data, num_data_points, 0.1);*/
     if (i % 500 == 0) {
       cout << num_iterations - i << " " << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
-    }
+      }
   }
-
+  
   cout << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
-
+  
   while (1) {
     cin >> inputs[0];
     cin >> inputs[1];
