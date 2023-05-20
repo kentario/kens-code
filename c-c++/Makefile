@@ -4,7 +4,7 @@ othello: othello.cpp
 	g++ $< -o $@
 
 neural-network: neural-network.cpp
-	g++ $< -o $@
+	g++ -g $< -o $@
 
 draw: draw.cpp
 	g++ $< -o $@ -lSDL2
