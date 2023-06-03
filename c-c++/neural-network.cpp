@@ -6,49 +6,12 @@
 using namespace std;
 
 /*
-  The steps to this neural network:
-  Each neuron gets its corresponding bias added to it.
-  Each neuron in the next layer becomes the sum of all the neurons in the previous layer multiplied to their corresponding weights.
-  The activation function is applied to each neuron of the new layer.
-  Repeat for the next layer.
+The steps to this neural network:
+Each neuron gets its corresponding bias added to it.
+Each neuron in the next layer becomes the sum of all the neurons in the previous layer multiplied to their corresponding weights.
+The activation function is applied to each neuron of the new layer.
+Repeat for the next layer.
 */
-
-// Derivative of tanh (hyperbolic tangent) function.
-double tanh_derivative (double x) {
-  // Tanh is already defined in the <cmath> header so I only need a function for its derivative.
-  return 1 - pow(tanh(x), 2);
-}
-
-// ReLU function.
-double relu (double x) {
-  return x < 0 ? 0 : x;
-}
-
-// Derivative of ReLU function.
-double relu_derivative (double x) {
-  return x < 0 ? 0 : 1;
-}
-
-// Leaky ReLU function.
-double leaky_relu (double x) {
-  return x < 0 ? (0.1 * x) : x;
-}
-
-// Derivative of leaky ReLU function.
-double leaky_relu_derivative (double x) {
-  return x < 0 ? 0.1 : 1;
-}
-
-// Sigmoid function
-double sigmoid (double x) {
-  return 1/(1 + exp(-x));
-}
-
-// Derivative of sigmoid function.
-double sigmoid_derivative (double x) {
-  double sigmoid_x = sigmoid(x);
-  return sigmoid_x * (1 - sigmoid_x);
-}
 
 // Returns a random number between -1 and 1.
 double random_number () {
@@ -84,21 +47,18 @@ private:
   
   int num_neurons;
   int num_inputs;
+  string activation_function_type;
 public:
   // Layer constructor.
-  Layer (int num_inputs, int num_neurons) :
-    // Setting num_neurons and num_inputs to their corresponding values.
-    num_neurons(num_neurons), num_inputs(num_inputs),
+  Layer (int num_inputs, int num_neurons, string activation_function_type) :
+    // Setting num_neurons, num_inputs, and activation_function_type to their corresponding values.
+    num_neurons(num_neurons), num_inputs(num_inputs), activation_function_type(activation_function_type),
     // Resizing the weights and biases.
     weights(num_neurons, vector<double> (num_inputs)), biases(num_neurons),
     // Resizing the weight and bias cost gradients.
     weight_cost_gradients(num_neurons, vector<double> (num_inputs)), bias_cost_gradients(num_neurons),
     // Resizing the preactivations, and the activations.
     inputs(num_inputs), preactivations(num_neurons), activations(num_neurons) {}
-
-  int get_activations_size () {
-    return activations.size();
-  }
   
   // Allows changing the weights array from outside the Layer class.
   void set_weights (const int output_neuron, const int input_neuron, const double value) {
@@ -140,6 +100,40 @@ public:
     return num_inputs;
   }
   
+  double calculate_activation_function (double x) {
+    if (activation_function_type == "sigmoid") {
+      return 1/(1 + exp(-x));
+    } else if (activation_function_type == "tanh") {
+      // Hyperbolic tangent is already defined in the <cmath> header.
+      return tanh(x);
+    } else if (activation_function_type == "relu") {
+      return x < 0 ? 0 : x;
+    } else if (activation_function_type == "leaky_relu") {
+      return x < 0 ? (0.1 * x) : x;
+    } else if (activation_function_type == "identity") {
+      return x;
+    }
+    // By default, return 0;
+    return 0;
+  }
+  
+  double calculate_activation_function_derivative (double x) {
+    if (activation_function_type == "sigmoid") {
+      double sigmoid_x = 1/(1 + exp(-x));
+      return sigmoid_x * (1 - sigmoid_x);
+    } else if (activation_function_type == "tanh") {
+      return 1 - pow(tanh(x), 2);
+    } else if (activation_function_type == "relu") {
+      return x < 0 ? 0 : 1;
+    } else if (activation_function_type == "leaky_relu") {
+      return x < 0 ? 0.1 : 1;
+    } else if (activation_function_type == "identity") {
+      return 1;
+    }
+    // By default, return 0;
+    return 0;
+  }
+  
   // Initialize the layers weights and biases randomly to a value between -1 and 1.
   void initialize_layer_randomly () {
     int output_index = 0;
@@ -150,7 +144,7 @@ public:
 	weight = random_number();
       }
       biases[output_index] = random_number();
-
+      
       output_index++;
     }
   }
@@ -173,7 +167,7 @@ public:
 	input_index++;
       }
       // Now that preactivations are calculated, apply the activation function.
-      activations[output_index] = leaky_relu(preactivations[output_index]);
+      activations[output_index] = calculate_activation_function(preactivations[output_index]);
       
       output_index++;
     }
@@ -221,7 +215,7 @@ public:
     for (int output = 0; output < num_outputs; output++) {
       // Loop over each output neuron and calculate its partial derivative.
       double cost_derivative = calculate_neuron_cost_derivative(activations[output], expected_outputs[output]);
-      double activation_function_derivative = leaky_relu_derivative(preactivations[output]);
+      double activation_function_derivative = calculate_activation_function_derivative(preactivations[output]);
       node_values[output] = cost_derivative * activation_function_derivative;
     }
     return node_values;
@@ -240,7 +234,7 @@ public:
 	new_node_value += old_layer.get_weights(old_node, new_node_index) * old_node_values[old_node];
       }
       // &new_node_value - &new_node_values[0] gives the index of the outer loop.
-      new_node_value *= leaky_relu_derivative(preactivations[new_node_index]);
+      new_node_value *= calculate_activation_function_derivative(preactivations[new_node_index]);
       
       new_node_index++;
     }
@@ -289,6 +283,7 @@ public:
 
   // Prints all the weight and bias gradients of the layer.
   void print_gradients () {
+    int a = 160;
     int bias_gradient_index = 0;
     
     for (const auto &wcgradients_for_this_output : weight_cost_gradients) {
@@ -297,10 +292,10 @@ public:
       for (const auto &weight_cost_gradient : wcgradients_for_this_output) {
 	// This for loop loops over every weight that is connected to the neuron.
 	// Print out the weight cost gradient.
-	cout << weight_cost_gradient << " ";
+	cout << weight_cost_gradient/a << " ";
       }
       // Print out the bias cost gradient.
-      cout << "Bias Gradient " << bias_gradient_index << ": " << bias_cost_gradients[bias_gradient_index] << " ";
+      cout << "Bias Gradient " << bias_gradient_index << ": " << bias_cost_gradients[bias_gradient_index]/a << " ";
       
       bias_gradient_index++;
     }
@@ -333,12 +328,12 @@ private:
   int num_layers;
 public:
   // Network constructor.
-  Network (int layer_sizes[], int num_layers) :
+  Network (int layer_sizes[], int num_layers, string activation_function_types[]) :
     num_layers(num_layers) {
     for (int i = 1; i < num_layers; i++) {
       // I starts at 1 because the input layer doesn't have any weights or biases, but the size of the input layer is recorded.
       // Add a layer to the end of the list of layers.
-      layers.push_back(Layer(layer_sizes[i - 1], layer_sizes[i]));
+      layers.push_back(Layer(layer_sizes[i - 1], layer_sizes[i], activation_function_types[i]));
     }
   }
   
@@ -439,6 +434,8 @@ public:
   }
 
   void learn (Data_Point training_batch[], const int training_batch_size, const double learn_rate) {
+    // Clear all the gradients so that previous gradients don't mess up the current calculations.
+    // I clear the gradients at the beginning of the function instead of the end because I want to be able to print the gradients from outside the function afterwards.
     // Update the gradients using each data point of the training batch.
     for (int data_point = 0; data_point < training_batch_size; data_point++) {
       update_all_gradients(training_batch[data_point]);
@@ -448,9 +445,6 @@ public:
     
     // Apply all the gradients.
     apply_all_gradients(learn_rate/training_batch_size);
-    
-    // Clear all the gradients so that they will be ready for the next training batch.
-    clear_all_gradients();
   }
   
   // Runs a single iteration of gradient descent not using calculus.
@@ -508,13 +502,99 @@ public:
   }
 };
 
-int main () {
-  int layer_sizes[] = {2, 3, 1};
+int test_arithmetic () {
+  int layer_sizes[] = {3, 16, 64, 32, 4, 1};
+  // I set the input layer activation function as blank because the input layer doesn't have an activation function.
+  string activation_function_types[] = {"", "tanh", "tanh", "sigmoid", "leaky_relu", "identity"};
   int num_layers = sizeof(layer_sizes)/sizeof(layer_sizes[0]);
-  Network my_network(layer_sizes, num_layers);
+  Network my_network(layer_sizes, num_layers, activation_function_types);
   
   my_network.initialize_network_randomly();
-  my_network.print_network();
+  
+  vector<double> inputs;
+  inputs.resize(3);
+  vector<double> outputs;
+  outputs.resize(1);
+
+  char operators[] = { '+', '-'/*, '*', '/' */};
+  int num_operators = sizeof(operators)/sizeof(operators[0]);
+  int num_operand_pairs = 40;
+    
+  Data_Point data[num_operand_pairs * num_operators];
+
+  double symbol = 0;
+  int data_point = 0;
+  
+  for (int operand_pair = 0; operand_pair < num_operand_pairs; operand_pair++) {
+    int a = floor((random_number() + 1) * 10);
+    int b = floor((random_number() + 1) * 10);
+    for (int current_operator_index = 0; current_operator_index < num_operators; current_operator_index++) {
+      
+      data[data_point].inputs.resize(3);
+      data[data_point].outputs.resize(1);
+          
+      data[data_point].inputs[0] = a;
+      data[data_point].inputs[1] = b;
+      data[data_point].inputs[2] = operators[current_operator_index];
+      
+      switch (operators[current_operator_index]) {
+      case '+':
+	data[data_point].outputs[0] = data[data_point].inputs[0] + data[data_point].inputs[1];
+	break;
+      case '-':      
+	data[data_point].outputs[0] = data[data_point].inputs[0] - data[data_point].inputs[1];
+	break;
+      case '*':
+	data[data_point].outputs[0] = data[data_point].inputs[0] * data[data_point].inputs[1];
+	break;
+      case '/':
+	data[data_point].outputs[0] = data[data_point].inputs[0] / data[data_point].inputs[1];
+	break;
+      }
+      data_point++;
+    }
+  }
+  
+  int num_data_points = sizeof(data)/sizeof(data[0]);
+  cout << "First cost: " << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
+
+  int num_iterations = 1;
+  const int learn_rate = 1;
+  int cost = 0;
+  double acceptable_cost = 0.01;
+  
+  for (int i = 0; i < num_iterations; i++) {
+    my_network.learn(data, num_data_points, learn_rate);
+    if (i % 1 == 0) {
+      cost = my_network.calculate_average_data_cost(data, num_data_points);
+      cout << num_iterations - i << " " << cost << "\n";
+      my_network.print_network_gradients();
+      if (abs(cost) < acceptable_cost) {
+	cout << "Cost is under the acceptable cost: " << abs(cost) << "\n";
+	break;
+      }
+    }
+  }
+  
+  cout << "Last cost: " << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
+  
+  while (1) {
+    cin >> inputs[0];
+    cin >> inputs[1];
+    cin >> inputs[2];
+    cout << (my_network.calculate_network_outputs(inputs)[0] /*> 0.5 ? 1 : 0*/) << "\n";
+  }
+  
+  return 0;
+}
+
+int test_xor () {
+  int layer_sizes[] = {2, 3, 1};
+  string activation_functions[] = {"", "leaky_relu", "leaky_relu"};
+  int num_layers = sizeof(layer_sizes)/sizeof(layer_sizes[0]);
+  Network my_network(layer_sizes, num_layers, activation_functions);
+  
+  my_network.initialize_network_randomly();
   
   vector<double> inputs;
   inputs.resize(2);
@@ -551,5 +631,10 @@ int main () {
     cout << (my_network.calculate_network_outputs(inputs)[0] /*> 0.5 ? 1 : 0*/) << "\n";
   }
   
+  return 0;
+}
+
+int main () {
+  test_arithmetic();
   return 0;
 }

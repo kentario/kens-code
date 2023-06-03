@@ -1,7 +1,13 @@
-build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4
+
+connect-4: connect-4.cpp
+	g++ $< -o $@
 
 othello: othello.cpp
 	g++ $< -o $@
+
+run-neural-network: neural-network
+	./neural-network
 
 neural-network: neural-network.cpp
 	g++ -g $< -o $@
