@@ -117,10 +117,9 @@ public:
 
     int column_index = 0;
     for (const auto &column : board_state) {
-      if (column[board_height - 1] == 0) {
-	// For each column, if the top square is empty, that means that it is a legal move.
-	actions.push_back(column_index);
-      }
+      // For each column, if the top square is empty, that means that it is a legal move.
+      if (column[board_height - 1] == 0) actions.push_back(column_index);
+      
       column_index++;
     }
     
@@ -129,13 +128,8 @@ public:
 
   bool stalemate () const {
     for (const auto &column : board_state) {
-      for (const auto &square : column) {
-	// Loop over each square in the board.
-	if (square == 0) {
-	  // If there is an empty square, it is not stalemate.
-	  return false;
-	}
-      }
+      // If a column is not full, then it is not stalemate.
+      if (column[board_height - 1] == 0) return false;
     }
 
     // If there are no empty squares, then it is not stalemate.
@@ -263,36 +257,45 @@ int next_board_state (const Board &current, Board &next, const int &action) {
   return next.move(action);
 }
 
-int minimax (const Board current, int depth) {
+int minimax (const Board current, int depth, int alpha, int beta, bool player_max) {
+  // Alpha is the best value found so far for the max player.
+  // Beta is the best value found so far for the min player.
   // White (1) is the max player, black (-1) is the min player.
   const int max_player = 1;
   const int min_player = -1;
   int value;
-  
-  //  cout << depth << "\n";
-  
+
+  // If the game is over, or the algorithm has reached its maximum depth, return the value of the current position.
   if (current.terminal() || depth <= 0) return current.value();
   
-  if (current.player() == max_player) {
+  if (player_max) {
     value = -INT_MAX;
     for (const auto &action : current.actions()) {
       Board next({}, 7, 6);
       if (next_board_state(current, next, action) < 0) {
 	return -INT_MAX;
       }
-      value = max(value, minimax(next, depth - 1));
+      value = max(value, minimax(next, depth - 1, alpha, beta, false));
+      alpha = max(alpha, value);
+      if (beta <= alpha) {
+	break;
+      }
     }
     return value;
   }
   
-  if (current.player() == min_player) {
+  if (!player_max) {
     value = INT_MAX;
     for (const auto &action : current.actions()) {
       Board next({}, 7, 6);
       if (next_board_state(current, next, action) < 0) {
 	return -INT_MAX;
       }
-      value = min(value, minimax(next, depth - 1));
+      value = min(value, minimax(next, depth - 1, alpha, beta, true));
+      beta = min(beta, value);
+      if (beta <= alpha) {
+	break;
+      }
     }
     return value;
   }
@@ -305,6 +308,9 @@ int best_next_move (const Board &current, int depth) {
   const int max_player = 1;
   const int min_player = -1;
 
+  int alpha = -INT_MAX;
+  int beta = INT_MAX;
+
   int best_move;
   
   if (current.player() == max_player) {
@@ -315,7 +321,7 @@ int best_next_move (const Board &current, int depth) {
 	return -INT_MAX;
       }
 
-      int this_value = minimax(next, depth - 1);
+      int this_value = minimax(next, depth - 1, alpha, beta, false);
       int next_value = max(value, this_value);
       cout << action << " " << this_value << "\n";
       
@@ -334,7 +340,7 @@ int best_next_move (const Board &current, int depth) {
 	return -INT_MAX;
       }
 
-      int this_value = minimax(next, depth - 1);
+      int this_value = minimax(next, depth - 1, alpha, beta, true);
       int next_value = min(value, this_value);
       cout << action << " " << this_value << "\n";
       
@@ -349,7 +355,7 @@ int best_next_move (const Board &current, int depth) {
 }
 
 int main () {
-  int depth = 7;
+  int depth = 9;
   vector<int> board_state_input = {};
 
   Board minimax_test(board_state_input, 7, 6);
