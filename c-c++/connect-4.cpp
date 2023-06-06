@@ -209,16 +209,15 @@ public:
     if (stalemate()) return 0;
     if (number_of_lines(1, 4) >= 1) return 1000;
     if (number_of_lines(-1, 4) >= 1) return -1000;
-    
-    int value = 0;
 
-    value += number_of_lines(1, 1);
-    value += number_of_lines(1, 2);
-    value += number_of_lines(1, 3);
+    // Give a small advantage to the starting player.
+    int value = 1;
 
-    value -= number_of_lines(-1, 1);
-    value -= number_of_lines(-1, 2);
-    value -= number_of_lines(-1, 3);
+    value += 2 * number_of_lines(1, 2);
+    value += 4 * number_of_lines(1, 3);
+
+    value -= 2 * number_of_lines(-1, 2);
+    value -= 4 * number_of_lines(-1, 3);
 
     if (value < -1000 || value > 1000) {
       cout << "big nono\n";
