@@ -1,380 +1,411 @@
 #include <iostream>
 #include <vector>
-#include <climits>
 #include <algorithm>
+#include <climits>
 
 using namespace std;
 
 class Board {
 private:
-  // By default, whie goes first.
-  int current_move_color = 1;
-  // 0 is empty, -1 is black, 1 is white.
-  // board_state is accesed board_state[distance from left edge][distance from bottom].
-  // So in the standard 7 x 6 board, the top right would be accesed board_state[6][5].
-  vector<vector<int>> board_state;
-  int board_width, board_height;
+  // Helps with making the accesing of the bitboards more readable.
+  // white is the max player, black is the min player.
+  const int white = 0;
+  const int black = 1;
+  
+  // There are 2 bitboards, one is all of blacks moves, the other is all of whites moves.
+  // bitboard[0] is white, bitboard[1] is black.
+  unsigned long long bitboards[2] = {0, 0};
+  
+  // Stores the amount to shift the board by to look for lines.
+  // Vertical, Horizontal, Diagonal \, Diagonal /.
+  int directions[4] = {1, 7, 6, 8};
+  
+  // Stores the height of where a piece would fall according to its column.
+  int heights[7] = {0, 7, 14, 21, 28, 35, 42};
+  // Stores the number of moves that have been done so far.
+  int move_count = 0;
+  int board_width = 7, board_height = 6;
+  // Stores all the moves that have been played.
+  int moves[42];
 public:
-  Board (vector<int> board_input, int board_width, int board_height) :
-    board_width(board_width), board_height(board_height),
-    board_state(board_width, vector<int> (board_height)) {
-    set_board_state (board_input);
+  bool valid_move (int move) const {
+    // If move is outside of the board, it is not a valid move.
+    if (move < 0 || move > 6) return false;
+    
+    unsigned long long top = 0b1000000100000010000001000000100000010000001000000ULL;
+    
+    if ((top & (1ULL << heights[move])) == 0) return true;
+    
+    return false;
   }
   
-  void set_board_state (vector<int> board_input) {
-    int current_column = 0;
-    int current_height = 0;
-    for (int spot = 0; spot < board_input.size(); spot++) {
-      if (current_column >= board_width) {
-	// If it is past the last column, then stop filling up the board.
-	break;
-      }
-      if (current_height >= board_height) {
-	// If the column is full, go to the next column.
-	current_column++;
-	current_height = 0;
-      }
-      if (board_input[spot] == 0) {
-	// 0 means go to next column, so if there is a 0, fill in the rest of the column as 0 to mean blank.
-	for (int temp_height = current_height; temp_height < board_height; temp_height++) {
-	  board_state[current_column][temp_height] = 0;
-	}
-	current_column++;
-	current_height = 0;
-      } else {
-	board_state[current_column][current_height] = board_input[spot];
-	current_height++;
-      }
+  vector<int> valid_moves () const {
+    vector<int> moves;
+    
+    for (int column = 0; column < 7; column++) {
+      if (valid_move(column)) moves.push_back(column);
     }
+    
+    return moves;
   }
   
-  vector<int> get_board_state () const {
-    vector<int> output;
-    for (const auto &column : board_state) {
-      for (const auto &square : column) {
-	if (square != 0) {
-	  output.push_back(square);
-	} else {
-	  output.push_back(0);
-	  break;
-	}
-      }
-    }
+  int do_move (int column) {
+    // If it isn't a valid move, then exit the function.
+    if (!valid_move(column)) return -1;
+    // column gives the index of the position of the move in height for that column.
+    // Shift a bit into that position and store it in move.
+    // After, increment the height by 1.
+    // move now contains a 1 just in the location of the move.
+    unsigned long long move = 1ULL << heights[column]++;
+    // If move_count is even, then its rightmost bit is a 0.
+    // This means that move_count & 1 will be 1 if move_count is odd, or 0 if move_count is even.
+    // If move_count is even, it is white's move, if move_count is odd it is black's move.
+    // bitboard[move_count & 1] access the bitboard of the current move.
+    // ^= move is a bitwise XOR.
+    // bitboards only gets affected in the spot where move is 1, which is where the move was played.
+    bitboards[move_count & 1] ^= move;
+    // Add the move to the list of moves, and then increment the number of moves by 1.
+    moves[move_count++] = column;
     
-    return output;
-  }
-
-  bool in_board (int column, int row) const {
-    if (column < 0 || column >= board_width) {
-      return false;
-    }
-    if (row < 0 || row >= board_height) {
-      return false;
-    }
-    
-    return true;
+    return 0;
   }
   
-  bool is_possible_move (int move) const {
-    if (!in_board(move, 0)) return false;
-    if (board_state[move][board_height - 1] != 0) return false;
-    return true;
+  void undo_move () {
+    // Decrement move_count (the number of moves done) by 1.
+    // Then find the column of the move done by looking into moves.
+    int column = moves[--move_count]; // Reverses the 3rd step of do_move.
+    // Decrement the height of the column by one.
+    // Shift a bit into the position of the move being undone in move.
+    long move = 1ULL << --heights[column]; // Reverses the 1st step of do_move.
+    // move_count & 1 gives whether the move was done by white or black.
+    // ^= move makes the spot where the move was done on the bitboard get turned into a 0.
+    bitboards[move_count & 1] ^= move; // Reverses the 2nd step of do_move.
   }
   
-  int move (int move) {
-    if (!is_possible_move(move)) return -1;
-    // If it is a possible move, play the move.
-    for (auto &square : board_state[move]) {
-      // Loop over each square in the column.
-      if (square == 0) {
-	// If the square is empty, play the move, swap the color, then exit the loop.
-	square = current_move_color;
-	current_move_color *= -1;
-	return 0;
-      }
-    }
-    
-    return -1;
-  }
-
-  int player () const {
-    return current_move_color;
-    /*    int player = 0;
-    for (const auto &column : board_state) {
-      for (const auto &square : column) {
-	// For each square in the board, get its value and add it to player.
-	// This will make it so that in the end, player will be equal to number of white pieces - number of black pieces.
-	player += square;
-      }
-    }
-
-    // It is white's move if the number of squares are equal, it is blacks move if white has one more square than black.
-    return (player == 0 ? 1 : -1);*/
-  }
-
-  vector<int> actions () const {
-    vector<int> actions;
-
-    int column_index = 0;
-    for (const auto &column : board_state) {
-      // For each column, if the top square is empty, that means that it is a legal move.
-      if (column[board_height - 1] == 0) actions.push_back(column_index);
-      
-      column_index++;
-    }
-    
-    return actions;
-  }
-
   bool stalemate () const {
-    for (const auto &column : board_state) {
-      // If a column is not full, then it is not stalemate.
-      if (column[board_height - 1] == 0) return false;
+    for (int column = 0; column < 6; column++) {
+      // For each move, if it is a valid move, that means that the column is empty.
+      // If there is an empty column, that means that it is not a stalemate.
+      if (valid_move(column)) return false;
     }
-
-    // If there are no empty squares, then it is not stalemate.
+    
+    // If none of the columns are empty, then it is a stalemate.
     return true;
   }
   
-  int number_of_lines (int color, int length) const {
-    // I will loop over each square, and for each square go in every direction length - 1 times.
-    // If each square inluding the original is the same as color, then I add 1 to the counter.
-    // I return the counter at the end.
-    int counter = 0;
-    
-    for (int column = 0; column < board_width; column++) {
-      for (int row = 0; row < board_width; row++) {
-	// Loop over each square.
-	if (board_state[column][row] != color) {
-	  // If the square is the wrong color, then skip to the next square.
-	  continue;
-	}
-	for (int x_direction = -1; x_direction < 2; x_direction++) {
-	  for (int y_direction = -1; y_direction < 2; y_direction++) {
-	    // Check each direction.
-	    //cout << "column: " << column << " row: " << row << " x_direction: " << x_direction << " y_direction: " << y_direction << "\n";
-	    if (x_direction == 0 && y_direction == 0) {
-	      // If the direction is just the current square, then its a waste to check so I just go to the next direction.
-	      continue;
-	    }
-
-	    int line_end_column = column + ((length - 1) * x_direction);
-	    int line_end_row = row + ((length - 1) * y_direction);
-	    if (!in_board(line_end_column, line_end_row)) {
-	      // If the very end of the line in this direction is off the board, then skip to the next direction.
-	      continue;
-	    }
-
-	    // Assume that the direction is valid until proven otherwise.
-	    bool valid_direction = true;
-	    
-	    for (int distance = 1; distance < length; distance++) {
-	      // Go in the given direction for length squares.
-	      // Distance starts at 1 because I don't have to check the color of the original square.
-	      int temp_column = column + (distance * x_direction);
-	      int temp_row = row + (distance * y_direction);
-	      
-	      if (board_state[temp_column][temp_row] != color) {
-		// If the color doesn't match the original square color, then skip to the next direction.
-		valid_direction = false;
-		break;
-	      }
-	    }
-	    
-	    if (valid_direction) {
-	      // If the code got to this spot, it means it passed all the tests for there not being a line of set length.
-	      // That means that there was a line at this spot, so add one to the counter.
-	      counter++;
-	    }
-	  }
-	}
-      }
+  bool win (bool player_black) const {
+    for (const auto &direction : directions) {
+      // bitboards[0] is the white board, bitboards[1] is the black board.
+      // If the player is black, player_black will be true, which means that bitboards[player_black] will be bitboards[1].
+      // Shifting the bitboard in the specific direction is like getting a line of 4 in a row, and compressing it into one square.
+      // If the compressed squares are combined with an AND, then a compressed square will only be 1 if there was a 4 in a row in that spot.
+      if ((  (bitboards[player_black] >> direction * 0)
+	   & (bitboards[player_black] >> direction * 1)
+	   & (bitboards[player_black] >> direction * 2)
+	   & (bitboards[player_black] >> direction * 3)) != 0) return true;
     }
-
-    // I divide counter by 2 because when counting the lines, the function will count a line from both ends.
-    return counter/2;
+    
+    return false;
   }
-
-  bool terminal () const {
-    if (number_of_lines(-1, 4) >= 1 || number_of_lines(1, 4) >= 1) {
-      // Return true if a player has won.
-      return true;
-    }
+  int number_of_lines (bool player_black, int length) const {
+    int line_count = 0;
     
-    // Return true if it is a stalemate, otherwise return false.
-    return stalemate();
+    for (const auto& direction : directions) {
+      // Shift the bitboard in the specific direction to check for lines.
+      unsigned long long shifted_board = bitboards[player_black];
+
+	//unsigned long long temp_board;
+      for (int distance = 1; distance < length; distance++) {
+	// Distance starts at 1, because starting at a distance of 0 makes it an and against itself, which will just output itself.
+	shifted_board &= (bitboards[player_black] >> (direction * distance));
+	/*
+	  temp_board = shifted_board;
+	if (direction == 7) {
+	  cout << "Line length: " << length << "\n";
+	  cout << "Distance: " << distance << "\n";
+	  cout << "Direction: " << direction << "\n";
+	  cout << "Current line count: " << line_count << "\n";
+	  cout << shifted_board << "\n";
+	  cout << "a";
+	  cout << "Previous board: ";
+	  print_bitboard(temp_board);
+	  cout << "Board being anded: ";
+	  print_bitboard(bitboards[player_black] >> (direction * distance));
+	  cout << "end";
+	  print_bitboard(shifted_board);
+	  }*/
+      }
+      //print_bitboard(shifted_board);
+      
+      // Each 1 in shifted_board corresponds to a line, so if I count all the 1s, then I get the number of lines.
+      line_count += __builtin_popcount(shifted_board);
+    }
+
+    return line_count;
+  }
+  
+  bool terminal () const {
+    // The game is over if a player has won.
+    if (win(white)) return true;
+    if (win(black)) return true;
+    // The game is over if it is a stalemate.
+    if (stalemate()) return true;
+    
+    // Otherwise the game is not over.
+    return false;
   }
   
   int value () const {
+    // white is the max player, black is the min player.
+    // If black has won, return a very negative number.
+    if (win(black)) return -2000;
+    // If white has won, return a very positive number.
+    if (win(white)) return 2000;
+    // If it is a stalemate, the position is equal.
     if (stalemate()) return 0;
-    if (number_of_lines(1, 4) >= 1) return 1000;
-    if (number_of_lines(-1, 4) >= 1) return -1000;
-
-    // Give a small advantage to the starting player.
+    
+    // Starting the value as 1 because the player who goes first has an advantage.
     int value = 1;
-
-    value += 2 * number_of_lines(1, 2);
-    value += 4 * number_of_lines(1, 3);
-
-    value -= 2 * number_of_lines(-1, 2);
-    value -= 4 * number_of_lines(-1, 3);
-
-    if (value < -1000 || value > 1000) {
-      cout << "big nono\n";
-    }
+    
+    // Since white is max, add the white players advantages.
+    value += 2 * number_of_lines(white, 2);
+    value += 3 * number_of_lines(white, 3);
+    
+    // Since black is min, subtract the black players advantages.
+    value += 2 * number_of_lines(black, 2);
+    value += 3 * number_of_lines(black, 3);
     
     return value;
   }
   
+  bool player_is_min () {
+    // bitboards[0] is white, bitboards[1] is black.
+    // white is the max player, black is the min player.
+    // The player to move is white if move_count is even.
+    // move_count is even if the last bit is a 0.
+    // If the last bit of move_count is 0, then move_count & 1 will return 0.
+    // That means that if player is white -> move_count is even -> return 0.
+    //                    player is black -> move_count is odd --> return 1.
+    return (move_count & 1);
+  }
+  
   void print_board () const {
-    for (const auto &column : board_state) {
-      cout << "_";
+    for (int i = 0; i < 7; i++) {
+      cout << "-";
     }
     cout << "\n";
-    for (int row = board_height - 1; row >= 0; row--) {
-      for (int column = 0; column < board_width; column++) {
-	if (board_state[column][row] == 0) {
-	  cout << " ";
-	} else if (board_state[column][row] == -1) {
-	  cout << "B";
-	} else if (board_state[column][row] == 1) {
-	  cout << "W";
-	}
-	// cout << column << " " << row << "  ";
+    
+    for (int row = 5; row >= 0; row--) {
+      for (int column = 0; column < 7; column++) {
+	if  	(bitboards[white] >> (column * 7 + row) & 1) cout << "W"; // If white's board has a 1, print a W.
+	else if (bitboards[black] >> (column * 7 + row) & 1) cout << "B"; // If black's board has a 1, print a B.
+	else                                                 cout << " "; // If both boards have a 0, print nothing.
       }
       cout << "|\n";
     }
-    for (const auto &column : board_state) {
+    
+    for (int i = 0; i < 7; i++) {
       cout << "-";
+    }
+    cout << "\n";
+  }
+  
+  void print_bitboard (unsigned long long bitboard) const {
+    for (int i = 0; i < 7; i++) {
+      cout << "=";
+    }
+    cout << "\n";
+    
+    for (int row = 5; row >= 0; row--) {
+      for (int column = 0; column < 7; column++) {
+	if (bitboard >> (column * 7 + row) & 1) cout << "1";
+	else cout << " ";
+      }
+      cout << "||\n";
+    }
+    
+    for (int i = 0; i < 7; i++) {
+      cout << "=";
     }
     cout << "\n";
   }
 };
 
-int next_board_state (const Board &current, Board &next, const int &action) {
-  next = current;
-  return next.move(action);
+// This function is mostly for testing purposes.
+void play_moves (Board board, int moves[], int num_moves) {
+  for (int move = 0; move < num_moves; move++) {
+    board.do_move(moves[move]);
+    board.print_board();
+    cout << "Player to play next: " << board.player_is_min() << "\n";
+    cout << "Value: " << board.value() << "\n";
+  }
 }
 
-int minimax (const Board current, int depth, int alpha, int beta, bool player_max) {
-  // Alpha is the best value found so far for the max player.
-  // Beta is the best value found so far for the min player.
-  // White (1) is the max player, black (-1) is the min player.
-  const int max_player = 1;
-  const int min_player = -1;
+int minimax (Board state, int depth, int alpha, int beta) {
+  // If the game is over, or it is reached the maximum depth, return the value.
+  if (state.terminal() || depth <= 0) return state.value();
+  
   int value;
-
-  // If the game is over, or the algorithm has reached its maximum depth, return the value of the current position.
-  if (current.terminal() || depth <= 0) return current.value();
-  
-  if (player_max) {
+  if (!state.player_is_min()) {
+    // If it is the max player.
     value = -INT_MAX;
-    for (const auto &action : current.actions()) {
-      Board next({}, 7, 6);
-      if (next_board_state(current, next, action) < 0) {
-	return -INT_MAX;
-      }
-      value = max(value, minimax(next, depth - 1, alpha, beta, false));
-      alpha = max(alpha, value);
-      if (beta <= alpha) {
-	break;
-      }
+    for (const auto &action : state.valid_moves()) {
+      state.do_move(action);
+      value = max(value, minimax(state, depth - 1, alpha, beta));
+      
+      alpha = max(value, alpha);
+      if (beta <= alpha) break;
+      
+      state.undo_move();
     }
     return value;
   }
   
-  if (!player_max) {
+  if (state.player_is_min()) {
+    // If it is the min player.
     value = INT_MAX;
-    for (const auto &action : current.actions()) {
-      Board next({}, 7, 6);
-      if (next_board_state(current, next, action) < 0) {
-	return -INT_MAX;
-      }
-      value = min(value, minimax(next, depth - 1, alpha, beta, true));
-      beta = min(beta, value);
-      if (beta <= alpha) {
-	break;
-      }
+    for (const auto &action : state.valid_moves()) {
+      state.do_move(action);
+      value = min(value, minimax(state, depth - 1, alpha, beta));
+      
+      beta = min(value, beta);
+      if (beta <= alpha) break;
+      
+      state.undo_move();
     }
     return value;
   }
-  
-  // If something breaks, return -INT_MAX.
+
+  // If something broke, just return -INT_MAX.
+  cout << "something is broken\n";
   return -INT_MAX;
 }
 
-int best_next_move (const Board &current, int depth) {
-  const int max_player = 1;
-  const int min_player = -1;
-
+int best_next_move (Board &current_board, int depth) {
+  bool current_is_min = current_board.player_is_min();
   int alpha = -INT_MAX;
   int beta = INT_MAX;
 
+  // Store all the move values.
+  int move_values[7];
+  for (int move = 0; move < 7; move++) {
+    if (current_board.valid_move(move)) {
+      // For each move, if the move is valid, then store its value.
+      current_board.do_move(move);
+      move_values[move] = current_board.value();
+      current_board.undo_move();
+    } else {
+      // Otherwise store a bad value.
+      // INT_MAX is too big/small for the sorting algorithm, so move it closer to 0 by 1.
+      if (!current_is_min) {
+	// For the max player, -INT_MAX is the worst value.
+	move_values[move] = -INT_MAX + 1;
+      } else {
+	// For the min player, INT_MAX is the worst value.
+	move_values[move] = INT_MAX - 1;
+      }
+    }
+  }
+
+  // Sort all the move values.
+  int move_order[7];
+  for (int order_index = 0; order_index < 7; order_index++) {
+    if (current_is_min) {
+      // Sort the moves by lowest value to highest value.
+      int best = INT_MAX;
+      for (int value_index = 0; value_index < 7; value_index++) {
+	if (move_values[value_index] < best) {
+	  move_order[order_index] = value_index;
+	  best = move_values[value_index];
+	}
+      }
+      move_values[move_order[order_index]] = INT_MAX;
+    } else {
+      // Sort the moves by highest value to lowest value.
+      int best = -INT_MAX;
+      for (int value_index = 0; value_index < 7; value_index++) {
+	if (move_values[value_index] > best) {
+	  move_order[order_index] = value_index;
+	  best = move_values[value_index];
+	}
+      }
+      move_values[move_order[order_index]] = -INT_MAX;
+    }
+  }
+
+  cout << "Move Order:\n";
+  for (const auto &move : move_order) {
+    cout << move << "\n";
+  }
+  
   int best_move;
-  
-  if (current.player() == max_player) {
-    int value = -INT_MAX;
-    for (const auto &action : current.actions()) {
-      Board next({}, 7, 6);
-      if (next_board_state(current, next, action) < 0) {
-	return -INT_MAX;
-      }
+  int this_value;
+  int best_value;
+  if (!current_is_min) {
+    best_value = -INT_MAX;
+    // Call minimax on all the moves.
+    for (const auto &move : move_order) {
+      // All the illegal moves are at the end.
+      if (!current_board.valid_move(move)) break;
 
-      int this_value = minimax(next, depth - 1, alpha, beta, false);
-      int next_value = max(value, this_value);
-      cout << action << " " << this_value << "\n";
-      
-      if (next_value > value) {
-	value = next_value;
-	best_move = action;
+      current_board.do_move(move);
+      this_value = minimax(current_board, depth - 1, alpha, beta);
+      cout << move << " " << this_value << "\n";
+      if (this_value > best_value) {
+	// If the new move value is better than the old best move value:
+	// This is the new best move value.
+	best_value = this_value;
+	// This is the new best move.
+	best_move = move;
       }
+      current_board.undo_move();
+    }
+  } else {
+    best_value = INT_MAX;
+    // Call minimax on all the moves.
+    for (const auto &move : move_order) {
+      // All the illegal moves are at the end.
+      if (!current_board.valid_move(move)) break;
+
+      current_board.do_move(move);
+      this_value = minimax(current_board, depth - 1, alpha, beta);
+      cout << move << " " << this_value << "\n";
+      if (this_value < best_value) {
+	// If the new move value is better than the old best move value:
+	// This is the new best move value.
+	best_value = this_value;
+	// This is the new best move.
+	best_move = move;
+      }
+      current_board.undo_move();
     }
   }
-  
-  if (current.player() == min_player) {
-    int value = INT_MAX;
-    for (const auto &action : current.actions()) {
-      Board next({}, 7, 6);
-      if (next_board_state(current, next, action) < 0) {
-	return -INT_MAX;
-      }
 
-      int this_value = minimax(next, depth - 1, alpha, beta, true);
-      int next_value = min(value, this_value);
-      cout << action << " " << this_value << "\n";
-      
-      if (next_value < value) {
-	value = next_value;
-	best_move = action;
-      }
-    }
-  }
-  
+  cout << "Move chosen: " << best_move << "\n";
   return best_move;
 }
 
-int main () {
-  int depth = 9;
-  vector<int> board_state_input = {};
 
-  Board minimax_test(board_state_input, 7, 6);
-  minimax_test.print_board();
-      
+int main () {
+  Board my_board;
+  my_board.print_board();
+  
+  int test[] = {0, 1, 0, 1, 0, 1, 0, 1, 1, 2, 0, 3, 0, 4, 1, 2, 6, 3, 6, 2, 6, 2, 6, 3, 5, 4, 4, 4, 5, 5, 5, 5};
+  int test2[] = {3, 3, 3, 3, 0, 3, 0, 4, 5, 5, 5, 5, 5, 4, 6, 4, 6, 4, 6, 4, 6};
+  
+  //  play_moves(my_board, test2, sizeof(test2)/sizeof(test2[0]));
+  
   while (1) {
-    cout << "Player to move is: " << minimax_test.player() << "\n";
-    int move;
-    
-    if (minimax_test.player() == 1) {
-      cin >> move;
-    } else if (minimax_test.player() == -1) {
-      move = best_next_move(minimax_test, depth);
+    int input;
+    if (my_board.player_is_min()) {
+      input = best_next_move(my_board, 10);
+    } else {
+      cin >> input;
     }
-    
-    minimax_test.move(move);
-    minimax_test.print_board();
-    
-    if (minimax_test.terminal()) {
-      cout << "Game over, the value is: " << minimax_test.value() << "\n";
+    my_board.do_move(input);
+    my_board.print_board();
+    if (my_board.terminal()) {
+      cout << "Game Over\n";
       break;
     }
   }
