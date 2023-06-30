@@ -398,7 +398,7 @@ int main () {
   while (1) {
     int input;
     if (my_board.player_is_min()) {
-      input = best_next_move(my_board, 10);
+      input = best_next_move(my_board, 11);
     } else {
       cin >> input;
     }

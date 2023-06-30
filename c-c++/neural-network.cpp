@@ -14,10 +14,10 @@ Repeat for the next layer.
 */
 
 // Returns a random number between -1 and 1.
-double random_number () {
+double random_number (double min, double max) {
   // I don't really know how this works.
-  static random_device generator;
-  static uniform_real_distribution<double> distribution(-1.0, 1.0);
+  random_device generator;
+  uniform_real_distribution<double> distribution(min, max);
   return distribution(generator);
   //  return 1;
 }
@@ -141,9 +141,9 @@ public:
     for (auto &weights_for_this_output : weights) {
       // This loops over every neuron that this layer outputs to.
       for (auto &weight : weights_for_this_output) {
-	weight = random_number();
+	weight = random_number(-1, 1);
       }
-      biases[output_index] = random_number();
+      biases[output_index] = random_number(-1, 1);
       
       output_index++;
     }
@@ -526,13 +526,13 @@ int test_arithmetic () {
   int data_point = 0;
   
   for (int operand_pair = 0; operand_pair < num_operand_pairs; operand_pair++) {
-    int a = floor((random_number() + 1) * 10);
-    int b = floor((random_number() + 1) * 10);
+    int a = floor((random_number(-1, 1) + 1) * 10);
+    int b = floor((random_number(-1, 1) + 1) * 10);
     for (int current_operator_index = 0; current_operator_index < num_operators; current_operator_index++) {
       
       data[data_point].inputs.resize(3);
       data[data_point].outputs.resize(1);
-          
+      
       data[data_point].inputs[0] = a;
       data[data_point].inputs[1] = b;
       data[data_point].inputs[2] = operators[current_operator_index];
@@ -557,7 +557,7 @@ int test_arithmetic () {
   
   int num_data_points = sizeof(data)/sizeof(data[0]);
   cout << "First cost: " << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
-
+  
   int num_iterations = 1;
   const int learn_rate = 1;
   int cost = 0;
@@ -610,17 +610,17 @@ int test_xor () {
   data[2].outputs = {1};
   data[3].inputs = {1, 0};
   data[3].outputs = {1};
-
+  
   int num_data_points = sizeof(data)/sizeof(data[0]);
   cout << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
-
+  
   int num_iterations = 10000;
-
+  
   for (int i = 0; i < num_iterations; i++) {
     my_network.learn(data, num_data_points, 0.1);
     if (i % 500 == 0) {
       cout << num_iterations - i << " " << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
-      }
+    }
   }
   
   cout << my_network.calculate_average_data_cost(data, num_data_points) << "\n";
@@ -634,7 +634,10 @@ int test_xor () {
   return 0;
 }
 
+double test_function (double x) {
+  return 10 * ((x + 1)/3 - 0.825) * ((x + 1)/3 - 1.575) * ((x + 1)/3 - 2.425) * ((x + 1)/3 - 2.925) * ((x + 1)/3 - 3) + 3;
+}
+
 int main () {
-  test_arithmetic();
   return 0;
 }
