@@ -49,16 +49,15 @@ public:
     
     // Resize the vector to a new size.
     void resize (const int &size) {
-        // If the new size is less then the capacity, then no new memory needs to be allocated, so only the value of size_ needs to be updated.
-        size_ = size;
-        // But if the new size is greater than the capacity, then allocate some memory.
+        // If the new size is greater than the capacity, then allocate some memory.
         if (size > capacity_) {
             try {
                 const T *temp_vector = vector;
-                vector = new T[size];
                 // If the memory for the vector had to be allocated, then the size is greater then the old capacity, so the capacity value needs to be updated.
                 capacity_ = size;
+                vector = new T[capacity_];
                 
+                // Copy everything from the old vector.
                 for (int i = 0; i < size; i++) {
                     vector[i] = temp_vector[i];
                 }
@@ -71,6 +70,15 @@ public:
                 exit(1);
             }
         }
+        // If the size of the vector grows, then fill in all the new space with nothing.
+        if (size > size_) {
+            for (int i {size_}; i < size; i++) {
+                // For each new element, fill it with the default value of T.
+                vector[i] = T{};
+            }
+        }
+        // The value of size_ needs to be updated regardless of whether any memory was allocated.
+        size_ = size;
     }
     
     bool operator== (const Vector<T> &other_vector) {
@@ -181,9 +189,11 @@ public:
 };
 
 int main () {
-    Vector<int> test(5);
+    Vector<int> test {3, 2, 1, 5, 6, 7, 7};
     test = {1, 2, 3};
-    
+    test = {1, 2, 3};
+    test[2] = 5;
+
     std::cout << "capacity: " << test.capacity() << "\n";
     std::cout << "size: " << test.size() << "\n";
     
