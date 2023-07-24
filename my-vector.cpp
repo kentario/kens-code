@@ -8,14 +8,13 @@ private:
     int capacity_ {}; // The amount of allocated memory in number of elements of the vector.
 public:
     // Constructor with no inputs.
-    Vector ()  {std::cout << "none\n";}
+    Vector () {}
     
     // Constructor with one input.
     Vector (const int size) {
         size_ = size;
         capacity_ = size;
         vector = new T[capacity_];
-        std::cout << "one\n";
     }
     
     // Constructor with two inputs.
@@ -27,7 +26,6 @@ public:
         for (int i {0}; i < size; i++) {
             vector[i] = value;
         }
-        std::cout << "two\n";
     }
     
     Vector (const std::initializer_list<T> &list) {
@@ -58,7 +56,7 @@ public:
                 vector = new T[capacity_];
                 
                 // Copy everything from the old vector.
-                for (int i = 0; i < size; i++) {
+                for (int i {0}; i < size_; i++) {
                     vector[i] = temp_vector[i];
                 }
                 
@@ -87,7 +85,7 @@ public:
             return false;
         }
         // If any of their elements are not equal, they are not equal.
-        for (int i = 0; i < size_; i++) {
+        for (int i {0}; i < size_; i++) {
             if (vector[i] != other_vector.vector[i]) {
                 return false;
             }
@@ -112,14 +110,6 @@ public:
         return true;
     }
     
-    // Accessing parts of the vector.
-    T& operator[] (const int index) {
-        if (index < 0 || index >= size_) {
-            //throw std::out_of_range("Index out of range");
-        }
-        return vector[index];
-    }
-
     Vector<T>& operator= (const Vector<T> &other_vector) {
         if (*this == other_vector) {
             return *this;
@@ -141,7 +131,7 @@ public:
         // Update the size value regardless of whether memory needs to be allocated.
         size_ = other_vector.size_;
         // Copy the data from the other vector regardless of whehter memory needs to be allocated.
-        for (int i = 0; i < size_; i++) {
+        for (int i {0}; i < size_; i++) {
             vector[i] = other_vector.vector[i];
         }
         // "this" is a pointer to the object that used "this".
@@ -178,7 +168,49 @@ public:
         // "this" is a pointer to the object that used "this".
         return *this;
     }
-
+    
+    // Accessing parts of the vector.
+    T& operator[] (const int index) {
+        if (index < 0 || index >= size_) {
+            //throw std::out_of_range("Index out of range");
+        }
+        return vector[index];
+    }
+    
+    // Access the first element.
+    T& front () {
+        return vector[0];
+    }
+    
+    // Access the last element.
+    T& back () {
+        return vector[size_ - 1];
+    }
+    
+    // Returns whether the vector is empty or not.
+    bool empty () {
+        return (size_ > 0) ? false : true;
+    }
+    
+    // Add an element to the end.
+    void push_back (const T &value) {
+        // Increase the size of the vector.
+        resize(size_ + 1);
+        // Assign the last element to be value.
+        back() = value;
+    }
+    
+    // Remove the last element.
+    void pop_back () {
+        // Only shrink the vector when it is not empty.
+        if (!empty()) size_--;
+    }
+    
+    // Returns a pointer to the array used to store the the vectors elements.
+    T* data () {
+        return vector;
+    }
+    
     int size () {
         return size_;
     }
@@ -189,18 +221,5 @@ public:
 };
 
 int main () {
-    Vector<int> test {3, 2, 1, 5, 6, 7, 7};
-    test = {1, 2, 3};
-    test = {1, 2, 3};
-    test[2] = 5;
-
-    std::cout << "capacity: " << test.capacity() << "\n";
-    std::cout << "size: " << test.size() << "\n";
-    
-    // Print the vector.
-    for (int i = 0; i < test.size(); i++) {
-        std::cout << test[i] << " ";
-    }
-    std::cout << "\n";
-    return 0;
+  return 0;
 }
