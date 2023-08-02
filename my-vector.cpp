@@ -28,6 +28,20 @@ public:
         }
     }
     
+    // Constructor with another vector.
+    Vector (Vector<T> &other_vector) {
+        size_ = other_vector.size();
+        capacity_ = other_vector.size();
+        vector = new T[capacity_];
+        
+        int i {0};
+        for (const T &element : other_vector) {
+            vector[i] = element;
+            i++;
+        }
+    }
+    
+    // Constructor with an initializer_list. Vector<int> example = {1, 2, 3};
     Vector (const std::initializer_list<T> &list) {
         size_ = list.size();
         capacity_ = list.size();
@@ -93,21 +107,10 @@ public:
         // Otherwise they are equal.
         return true;
     }
-
-    bool operator== (const std::initializer_list<T> &list) {
-        // If they have different sizes, they are not equal.
-        if (size_ != list.size()) {
-            return false;
-        }
-        // If any of their elements are not equal, they are not equal.
-        int i {0};
-        for (const T &element : list) {
-            if (vector[i] != element) return false;
-            i++;
-        }
-        
-        // Otherwise they are equal.
-        return true;
+    
+    bool operator!= (const Vector<T> &other_vector) {
+        // != is just the opposite of ==.
+        return !(*this == other_vector);
     }
     
     Vector<T>& operator= (const Vector<T> &other_vector) {
@@ -188,6 +191,7 @@ public:
     }
     
     // Returns whether the vector is empty or not.
+    // A vector containing {0, 0, 0} does not count as empty.
     bool empty () {
         return (size_ > 0) ? false : true;
     }
@@ -196,7 +200,7 @@ public:
     void push_back (const T &value) {
         // Increase the size of the vector.
         resize(size_ + 1);
-        // Assign the last element to be value.
+        // Assign the specified value to the last element.
         back() = value;
     }
     
@@ -211,15 +215,36 @@ public:
         return vector;
     }
     
+    // Return an iterator to the beginning: A pointer to the first element.
+    // Both begin() and data() do the same thing.
+    T* begin () {
+        return vector;
+    }
+    
+    // Return an iterator to the end: A pointer to where the element after the last element would be.
+    T* end () {
+        // Since size_ is the number of elements, but arrays start at 0, vector[size_ - 1] is the last element, so vector[size_] is the element after the last element.
+        // &vector[size_] is the same as vector + size_.
+        return vector + size_;
+    }
+    
+    // Clear the vector.
+    void clear () {
+        // Since the vector shrinks, just set the size to 0.
+        size_ = 0;
+    }
+    
+    // Returns the value of size_.
     int size () {
         return size_;
     }
     
+    // Returns the value of capacity_.
     int capacity () {
         return capacity_;
     }
 };
 
 int main () {
-  return 0;
+    
 }
