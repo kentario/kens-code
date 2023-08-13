@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+from pynput.mouse import Button, Controller as mouse_controller
+from pynput.keyboard import Key, Controller as key_controller
+import time
+import turtle
+
+keyboard = key_controller()
+mouse = mouse_controller()
+
+print('{0}'.format(mouse.position))
+
+time.sleep(3)
+
+mouse.click(Button.left, 100000)
