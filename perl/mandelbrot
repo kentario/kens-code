@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+
+use Math::Complex;
+use strict;
+
+# Z_(N+1) = (Z_N)^2 + C
+# Z_0 = 0
+# C is the input coordinate.
+# If the absolute value of Z_n ever deviates more than 2 from C, then it is not part of the set.
+# N is the number of iterations.
+
+# Default size: (-2, -1.5), (0.6, 1.5)
+
+my %in_set;
+my $x_min = shift;
+my $x_max = shift;
+my $y_min = shift;
+my $y_max = shift;
+my $steps = shift;
+my $total_iterations = shift;
+
+my $x_delta = ($x_max - $x_min)/$steps;
+my $y_delta = $x_delta * 2;
+
+my $x_coord;
+my $y_coord;
+
+# Computing set.
+
+for ($y_coord = $y_max; $y_coord >= $y_min; $y_coord -= $y_delta) {
+    for ($x_coord = $x_min; $x_coord <= $x_max; $x_coord += $x_delta) {
+	my $c = cplx($x_coord, $y_coord);
+	my @z;
+	$z[0] = 0;
+	my $n = 0;
+#	print "Iteration $n with a result of $z[0]\n";	
+	foreach (1 .. $total_iterations) {
+	    $z[$n + 1] = $z[$n] * $z[$n] + $c;
+	    $n ++;
+#	    print "Iteration $n with a result of $z[$n]\n";
+	    if (abs($z[$n]) > 2) {
+#		print "$z[$n] is greater than 2\n";
+		$in_set{$x_coord}{$y_coord} = undef;
+		last;
+	    } else {
+		$in_set{$x_coord}{$y_coord} = 1;
+#		print "$z[$n] is not greater than 2\n";
+	    }
+	}
+    }
+    print STDERR ".";
+}
+print STDERR "\n";
+# Displaying output of program.
+
+for ($y_coord = $y_max; $y_coord >= $y_min; $y_coord -= $y_delta) {
+    for ($x_coord = $x_min; $x_coord <= $x_max; $x_coord += $x_delta) {
+	if ($in_set{$x_coord}{$y_coord}) {
+	    print "#";
+	} else {
+	    print " ";
+	}
+    }
+    print "\n";
+}
