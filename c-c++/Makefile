@@ -1,4 +1,7 @@
-build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial count-unique-digits
+
+count-unique-digits: count-unique-digits.cpp
+	g++ -g $< -o $@
 
 tutorial: tutorial.cpp
 	g++ -g $< -o $@
