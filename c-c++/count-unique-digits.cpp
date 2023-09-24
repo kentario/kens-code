@@ -55,23 +55,26 @@ long factorial (int x) {
   return x * factorial(x - 1);
 }
 
-long permutations_with_repetition (std::vector<int> n_vector) {
-  // k is n_vector.size()
-  // n is the sum of all elements of n_vector.
-  // Returns n!/(PI(n_vector[i]!, i = 1 .. k))
+long multiply_and_apply (std::vector<int> elements, long (*function)(int)) {
+  long product {1};
 
-  int k {static_cast<int>(n_vector.size())};
+  for (const auto &element : elements) {
+    product *= function(element);
+  }
+  
+  return product;
+}
+
+long permutations_with_repetition (std::vector<int> n_vector) {
+  // n is the sum of all elements of n_vector.
+  // Returns n!/(The product of the factorials of every element in n_vector)
+
   int n {0};
   for (const auto &element : n_vector) {
     n += element;
   }
-  
-  // I don't know how to make a function that takes another function as an input, so I am going to just make the whole thing in here.
-  long product {1};
-  
-  for (int i {0}; i < k; i++) {
-    product *= factorial(n_vector[i]);
-  }
+
+  long product {multiply_and_apply(n_vector, factorial)};
   
   return factorial(n)/product;
 }
@@ -228,16 +231,15 @@ int main (int argc, char** argv) {
     total += math_total_unique_digits[i];
     std::cout << "mtud[i]: " << math_total_unique_digits[i] << "\n";
     std::cout << "static_cast<double>(mtud[i]): " << static_cast<long double>(math_total_unique_digits[i]) << "\n";
-    std::cout << "static_cast<double>(mtud[i])/num_numbers: " << static_cast<long double>(math_total_unique_digits[i])/num_numbers << "\n\n";
-    std::cout << "static_cast<double>(mtud[i])/num_numbers * 100: " << static_cast<long double>(math_total_unique_digits[i])/num_numbers * 100 << "\n\n";
+    std::cout << "static_cast<double>(mtud[i])/num_numbers: " << static_cast<long double>(math_total_unique_digits[i])/num_numbers << "\n";
+    std::cout << "static_cast<double>(mtud[i])/num_numbers * 100: " << static_cast<long double>(math_total_unique_digits[i])/num_numbers * 100 << "\n";
     
     long double percentage = static_cast<long double>(math_total_unique_digits[i])/num_numbers * 100;
     
     std::cout << "For " << i << " unique digits, there are " << math_total_unique_digits[i] << " possibilities ";
-    std::cout << "(" << percentage << "% chance).\n\n\n";
+    std::cout << "(" << percentage << "% chance).\n\n";
   }
   std::cout << "num_numbers: " << num_numbers << " total: " << total << "\n";
 
-  
   return 0;
 }
