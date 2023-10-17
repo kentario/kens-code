@@ -21,13 +21,13 @@ inline std::ostream& operator<< (std::ostream &os, const Hit_Info &hit_info) {
   return os;
 }
 
-class Object {
+class Shape {
 protected:
   Vector3 color;
 public:
-  Object () {}
+  Shape () : color{0, 0, 0} {}
 
-  Object (Vector3 color) : color{color} {}
+  Shape (Vector3 color) : color{color} {}
   
   virtual Hit_Info hit (const Ray &ray, const bool debug) const = 0;
 };

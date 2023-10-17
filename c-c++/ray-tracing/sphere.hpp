@@ -3,9 +3,9 @@
 #ifndef __SPHERE_HPP_
 #define __SPHERE_HPP_
 
-#include "object.hpp"
+#include "shape.hpp"
 
-class Sphere : public Object {
+class Sphere : public Shape {
 private: 
   Vector3 center;
   double radius;
@@ -14,7 +14,7 @@ public:
   
   Sphere (Vector3 center, double radius) : center{center}, radius{radius} {}
 
-  Sphere (Vector3 color, Vector3 center, double radius) : Object{color}, center{center}, radius{radius} {}
+  Sphere (Vector3 color, Vector3 center, double radius) : Shape{color}, center{center}, radius{radius} {}
 
   Hit_Info hit (const Ray &ray, const bool debug) const;
 };

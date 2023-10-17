@@ -25,7 +25,7 @@ public:
   Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution);
 
   // Returns a 2d vector of all the pixel color values.
-  std::vector<std::vector<Vector3>> take_picture (const std::vector<Object*> objects) const;
+  std::vector<std::vector<Vector3>> take_picture (const std::vector<Shape*> shapes) const;
 };
 
 Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution) :
@@ -99,8 +99,8 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
   std::cout << "rays[400][400] = " << rays[400][400] << "\n";*/
 }
 
-std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Object*> objects) const {
-  unsigned long num_objects {objects.size()};
+std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*> shapes) const {
+  unsigned long num_shapes {shapes.size()};
   
   std::vector<std::vector<Vector3>> colors;
   colors.resize(horizontal_resolution);
@@ -109,15 +109,15 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Object
   for (int x {0}; x < horizontal_resolution; x++) {
     colors[x].resize(vertical_resolution);
     for (int y {0}; y < vertical_resolution; y++) {
-      Hit_Info hit_infos[num_objects] {};
+      Hit_Info hit_infos[num_shapes] {};
       
       // Loop over each shape and find if it hits the ray.
       int num_intersections {0};
       Hit_Info temp_hit_info;
 
       int i {0};
-      for (const auto *object : objects) {
-	temp_hit_info = object->hit(rays[x][y], false);
+      for (const auto *shape : shapes) {
+	temp_hit_info = shape->hit(rays[x][y], false);
 
 	if (temp_hit_info.hit) {
 	  num_intersections++;
@@ -125,12 +125,12 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Object
 	}
       }
       /*
-      for (int object {0}; object < num_objects; object++) {
-	temp_hit_info = objects[object].hit(rays[x][y], false);
+      for (int shape {0}; shape < num_shapes; shape++) {
+	temp_hit_info = shapes[shape].hit(rays[x][y], false);
 
 	if (temp_hit_info.hit) {
 	  num_intersections++;
-	  hit_infos[object] = temp_hit_info;
+	  hit_infos[shape] = temp_hit_info;
 	}
 	}*/
 

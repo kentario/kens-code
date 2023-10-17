@@ -58,13 +58,13 @@ int main () {/*
   
   spheres.push_back(Sphere{sphere_color, sphere_center, sphere_radius});
     
-  std::vector<Object*> objects;
+  std::vector<Shape*> shapes;
 
   for (auto &sphere : spheres) {
-    objects.push_back(&sphere);
+    shapes.push_back(&sphere);
   }
   
-  std::vector<std::vector<Vector3>> colors = my_camera.take_picture(objects);
+  std::vector<std::vector<Vector3>> colors = my_camera.take_picture(shapes);
 
   std::string file_name {"example.ppm"};
   twod_vector_to_ppm(colors, file_name);
