@@ -26,31 +26,43 @@ void twod_vector_to_ppm (std::vector<std::vector<Vector3>> &colors, std::string 
 }
 
 int main () {
+  std::cout << "Creating camera...\n";
   //                 origin, look_direction, horizontal_fov, horizontal_resolution, vertical_resolution.
-  Camera my_camera{{0, 0, 0}, {1, 0, 0},              90,             800,                 800};
+  Camera my_camera{{0, 0, 0}, {1, 0, 0},              100,            800,                 800};
   
+  std::cout << "Creating spheres...\n";
+  std::vector<Sphere> spheres;
+
   Vector3 sphere_color {31, 107, 220};
   Vector3 sphere_center {100, 0, 0};
   double sphere_radius = 50;
-  
-  std::vector<Sphere> spheres;
   spheres.push_back(Sphere{sphere_color, sphere_center, sphere_radius});
-  
-  sphere_color = {230, 32, 158};
-  sphere_center += {25, 75, 25};
-  sphere_radius = 50;
-  
-  spheres.push_back(Sphere{sphere_color, sphere_center, sphere_radius});
-  
+
+  std::cout << "Creating planes...\n";
+  std::vector<Plane> planes;
+
+  Vector3 plane_color {25, 89, 102};
+  Vector3 plane_origin {0, -100, 0};
+  Vector3 plane_normal {0, 1, 0.25};
+  planes.push_back(Plane{plane_color, plane_origin, plane_normal});
+
+  std::cout << "Combining shapes...\n";
   std::vector<Shape*> shapes;
   
   for (auto &sphere : spheres) {
     shapes.push_back(&sphere);
   }
-  
+
+  for (auto &plane : planes) {
+    shapes.push_back(&plane);
+  }
+
+  std::cout << "Taking picture...\n";
   std::vector<std::vector<Vector3>> colors = my_camera.take_picture(shapes);
-  
+
   std::string file_name {"example.ppm"};
+
+  std::cout << "Writing to file " + file_name + "...\n";
   twod_vector_to_ppm(colors, file_name);
   
   return 0;

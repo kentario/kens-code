@@ -5,7 +5,13 @@
 #define __CAMERA_HPP_
 
 #include "ray.hpp"
-#include "sphere.hpp"
+#include "shape.hpp"
+
+#define PI 3.141592653
+
+double tan_degrees (const double x) {
+  return tan(x * PI/180);
+}
 
 class Camera {
 private:
@@ -59,7 +65,7 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
     the forward length is look_direction.distance(), and since look_direction is normalized it is just 1.
     left_distance = tan(fov/2)
    */
-  double width = 2 * tan(horizontal_fov/2);
+  double width = 2 * tan_degrees(horizontal_fov/2);
   top_left += left_direction * width/2;
   // The top left is also half of the vertical fov up.
   // To get half of the vertical fov length:
@@ -72,7 +78,7 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
    */
   double vertical_fov {(horizontal_fov * vertical_resolution)/horizontal_resolution};
   // Use the same method to get the vertical distance from the vertical fov as the horizontal distance from the horizontal fov.
-  top_left += up_direction * tan(vertical_fov/2);
+  top_left += up_direction * tan_degrees(vertical_fov/2);
 
   // When iterating over each ray, it is necessary to have a grid of points that each ray passes through.
   // The distance between grid points is the width of the grid divided by the horizontal resolution.
@@ -118,7 +124,7 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*
       int i {0};
       for (const auto *shape : shapes) {
 	temp_hit_info = shape->hit(rays[x][y], false);
-
+	
 	if (temp_hit_info.hit) {
 	  num_intersections++;
 	  hit_infos[i++] = temp_hit_info;

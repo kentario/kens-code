@@ -10,7 +10,7 @@ private:
   Vector3 center;
   double radius;
 public:
-  Sphere () : center{0, 0, 0}, radius{1} {}
+  Sphere () : center{}, radius{1} {}
   
   Sphere (Vector3 center, double radius) : center{center}, radius{radius} {}
 
