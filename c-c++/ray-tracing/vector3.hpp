@@ -39,6 +39,8 @@ public:
 
   inline double distance_squared () const {return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];}
   inline double distance () const {return std::sqrt(distance_squared());}
+  inline double distance_squared (const Vector3 &a) const;
+  inline double distance (const Vector3 &a) const;
 
   inline void normalize ();
 
@@ -147,6 +149,14 @@ inline void Vector3::normalize () {
     v[1] /= length;
     v[2] /= length;
   }
+}
+
+inline double Vector3::distance_squared (const Vector3 &a) const {
+  return (a - *this).distance_squared();
+}
+
+inline double Vector3::distance (const Vector3 &a) const {
+  return (a - *this).distance();
 }
 
 inline Vector3 normalize (const Vector3 &a) {

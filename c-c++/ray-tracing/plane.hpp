@@ -15,13 +15,14 @@ public:
 
   Plane (Vector3 origin, Vector3 normal) : origin{origin}, normal{normal} {}
 
-  Plane (Vector3 color, Vector3 origin, Vector3 normal) : Shape{color}, origin{origin}, normal{normal} {}
+  Plane (Material material, Vector3 origin, Vector3 normal) : Shape{material}, origin{origin}, normal{normal} {}
 
   Hit_Info hit (const Ray &ray, const bool debug) const;
 };
 
 Hit_Info Plane::hit (const Ray &ray, const bool debug) const {
   Hit_Info hit_info {false};
+
   // A point on a plane can be defined as a point some distance from the origin perpendicular to the normal vector.
   // Start with a point some distance from the origin: (point - origin)
   // Then check if it is perpendicular to the normal vector, using dot product: (point - origin) dot normal = 0
@@ -48,9 +49,11 @@ Hit_Info Plane::hit (const Ray &ray, const bool debug) const {
     std::cout << "distance = " << distance << "\n";
   }
   
-  hit_info.hit = true; hit_info.distance = distance;
+  hit_info.hit = true;
+  hit_info.distance = distance;
   hit_info.hit_point = ray.point_at_distance(distance);
-  hit_info.normal = normal; hit_info.color = color;
+  hit_info.normal = normal;
+  hit_info.material = material;
   
   return hit_info;
 }

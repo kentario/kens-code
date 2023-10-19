@@ -146,7 +146,7 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*
 	if (hit_infos[hit_info].is_closer_than(*closest)) closest = hit_infos + hit_info;
       }
 
-      colors[x][y] = closest->color;
+      colors[x][y] = closest->material.color;
       /*      if (colors[x][y][0] != 0) {
 	std::cout << "colors[" << x << "][" << y << "] = " << colors[x][y] << "\n";
 	}*/

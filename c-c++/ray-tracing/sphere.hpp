@@ -14,13 +14,13 @@ public:
   
   Sphere (Vector3 center, double radius) : center{center}, radius{radius} {}
 
-  Sphere (Vector3 color, Vector3 center, double radius) : Shape{color}, center{center}, radius{radius} {}
+  Sphere (Material material, Vector3 center, double radius) : Shape{material}, center{center}, radius{radius} {}
 
   Hit_Info hit (const Ray &ray, const bool debug) const;
 };
 
 Hit_Info Sphere::hit (const Ray &ray, const bool debug) const {
-  Hit_Info info {false};
+  Hit_Info hit_info {false};
 
   // To make the calculations easier, do all calculations relative to the center of the sphere.
   Vector3 offset_ray_origin = ray.origin() - center;
@@ -39,23 +39,23 @@ Hit_Info Sphere::hit (const Ray &ray, const bool debug) const {
   }
 
   // In the quadratic formula, the discriminant is in a square root, so if the discriminant is negative there are no real solutions.
-  if (discriminant < 0) return info;
+  if (discriminant < 0) return hit_info;
 
   // I want to get the minimum distance, because the further distance would be behind the closer distance.
   // Subtracting sqrt(discriminant) will minimize the distance.
   double distance {(-b - std::sqrt(discriminant))/(2 * a)};
   // If the distance is negative, that means that the ray starts inside of another sphere, or that the sphere is entirely behind the ray.
   // In both cases the sphere will not be visisble.
-  if (distance < 0) return info;
+  if (distance < 0) return hit_info;
 
-  info.hit = true;
-  info.distance = distance;
-  info.hit_point = ray.point_at_distance(distance);
+  hit_info.hit = true;
+  hit_info.distance = distance;
+  hit_info.hit_point = ray.point_at_distance(distance);
   // The normal vector of a point on the sphere is just the point in space relative to the sphere normalized.
-  info.normal = normalize(info.hit_point - center);
-  info.color = color;
+  hit_info.normal = normalize(hit_info.hit_point - center);
+  hit_info.material = material;
   
-  return info;
+  return hit_info;
 }
 
 #endif // __SPHERE_HPP_ not defined
