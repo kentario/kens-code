@@ -27,6 +27,8 @@ private:
   double vertical_resolution;
   
   std::vector<std::vector<Ray>> rays;
+
+  Hit_Info calculate_ray_collision (const Ray &ray) const;
 public:
   Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution);
 
@@ -98,11 +100,11 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
       rays[x][y] = Ray(origin, direction);      
     }
   }
+}
 
-  /*  std::cout << "top_left = " << top_left << "\n";
-  std::cout << "top_left - pixel_spacing * 400 * left_direction = " << top_left - pixel_spacing * 400 * left_direction << "\n";
-  std::cout << "top_left - pixel_spacing * 400 * left_direction - pixel_spacing * 400 * up_direction = " << top_left - pixel_spacing * 400 * left_direction - pixel_spacing * 400 * up_direction << "\n";
-  std::cout << "rays[400][400] = " << rays[400][400] << "\n";*/
+Hit_Info Camera::calculate_ray_collision (const Ray &ray) const {
+  Hit_Info closest;
+  return closest;
 }
 
 std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*> shapes) const {
@@ -130,15 +132,6 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*
 	  hit_infos[i++] = temp_hit_info;
 	}
       }
-      /*
-      for (int shape {0}; shape < num_shapes; shape++) {
-	temp_hit_info = shapes[shape].hit(rays[x][y], false);
-
-	if (temp_hit_info.hit) {
-	  num_intersections++;
-	  hit_infos[shape] = temp_hit_info;
-	}
-	}*/
 
       // Find the hit_info with the shortest distance to the ray.
       Hit_Info *closest {hit_infos};
