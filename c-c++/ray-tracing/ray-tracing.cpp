@@ -27,10 +27,6 @@ void twod_vector_to_ppm (std::vector<std::vector<Vector3>> &colors, std::string 
 }
 
 int main () {
-  std::cout << "Creating camera...\n";
-  //                 origin, look_direction, horizontal_fov, horizontal_resolution, vertical_resolution.
-  Camera my_camera{{0, 0, 0}, {1, 0, 0},              110,            800,                 800};
-  
   std::cout << "Creating spheres...\n";
   std::vector<Sphere> spheres;
 
@@ -74,8 +70,12 @@ int main () {
     shapes.push_back(&disc);
   }
 
+  std::cout << "Creating camera...\n";
+  //                 origin, look_direction, horizontal_fov, horizontal_resolution, vertical_resolution, shapes.
+  Camera my_camera{{0, 0, 0}, {1, 0, 0},              110,            800,                 800,          shapes};
+  
   std::cout << "Taking picture...\n";
-  std::vector<std::vector<Vector3>> colors = my_camera.take_picture(shapes);
+  std::vector<std::vector<Vector3>> colors = my_camera.take_picture();
 
   std::string file_name {"example.ppm"};
 

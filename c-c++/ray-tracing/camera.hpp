@@ -26,21 +26,25 @@ private:
   
   double horizontal_resolution;
   double vertical_resolution;
-  
+
+  std::vector<Shape*> shapes;
   std::vector<std::vector<Ray>> rays;
 
-  Hit_Info calculate_ray_collision (const std::vector<Shape*> &shapes, const Ray &ray) const;
+  Hit_Info calculate_ray_collision (const Ray &ray) const;
+
+  Vector3 trace_ray (const Ray &ray) const;
 public:
-  Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution);
+  Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution, std::vector<Shape*> shapes);
 
   // Returns a 2d vector of all the pixel color values.
-  std::vector<std::vector<Vector3>> take_picture (const std::vector<Shape*> &shapes) const;
+  std::vector<std::vector<Vector3>> take_picture () const;
 };
 
-Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution) :
+Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution, std::vector<Shape*> shapes) :
   origin{origin}, look_direction{look_direction},
   horizontal_fov{horizontal_fov},
-  horizontal_resolution{horizontal_resolution}, vertical_resolution{vertical_resolution} {
+  horizontal_resolution{horizontal_resolution}, vertical_resolution{vertical_resolution},
+  shapes{shapes} {
   
   // To get the left direction, take the cross product of the look and the target up direction. a should be target up, b should be look_direction (see right hand rule).
   // The target up direction is the direction that I want the up direction to be closest to. In this project, I want the y axis to be up, so the target up direction will be (0, 1, 0), which is a unit vector pointing in the direction of the y-axis.
@@ -103,7 +107,7 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
   }
 }
 
-Hit_Info Camera::calculate_ray_collision (const std::vector<Shape*> &shapes, const Ray &ray) const {
+Hit_Info Camera::calculate_ray_collision (const Ray &ray) const {
   unsigned long num_shapes {shapes.size()};
 
   // Anything will be closer than the max double.
@@ -125,7 +129,13 @@ Hit_Info Camera::calculate_ray_collision (const std::vector<Shape*> &shapes, con
   return closest;
 }
 
-std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*> &shapes) const {
+Vector3 Camera::trace_ray (const Ray &ray) const {
+  Vector3 color;
+
+  return color;
+}
+
+std::vector<std::vector<Vector3>> Camera::take_picture () const {
   unsigned long num_shapes {shapes.size()};
   
   std::vector<std::vector<Vector3>> colors;
@@ -135,7 +145,7 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*
   for (int x {0}; x < horizontal_resolution; x++) {
     colors[x].resize(vertical_resolution);
     for (int y {0}; y < vertical_resolution; y++) {
-      colors[x][y] = calculate_ray_collision(shapes, rays[x][y]).material.color;
+      colors[x][y] = calculate_ray_collision(rays[x][y]).material.color;
       /*      if (colors[x][y][0] != 0) {
 	std::cout << "colors[" << x << "][" << y << "] = " << colors[x][y] << "\n";
 	}*/
