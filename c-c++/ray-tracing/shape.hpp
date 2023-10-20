@@ -66,9 +66,14 @@ Vector3 rand_on_unit_sphere () {
   double x {r * sin_phi * cos_theta};
   double y {r * sin_phi * sin_theta};
   double z {r * cos_phi};
+  
+  return normalize(Vector3{x, y, z});
+}
 
-  Vector3 point{x, y, z};
-  return point;
+Vector3 rand_on_hemisphere (const Vector3 &hemisphere_normal) {
+  Vector3 point {rand_on_unit_sphere()};
+  // If the point is within the hemisphere of hemisphere_normal, then their dot product is positive.
+  return point * (dot(hemisphere_normal, point) < 0 ? -1 : 1);
 }
 
 #endif // __OBJECT_HPP_ not defined

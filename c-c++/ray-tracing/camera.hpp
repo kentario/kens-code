@@ -1,5 +1,6 @@
 #include <vector>
 #include <cmath>
+#include <limits>
 
 #ifndef __CAMERA_HPP_
 #define __CAMERA_HPP_
@@ -28,12 +29,12 @@ private:
   
   std::vector<std::vector<Ray>> rays;
 
-  Hit_Info calculate_ray_collision (const Ray &ray) const;
+  Hit_Info calculate_ray_collision (const std::vector<Shape*> &shapes, const Ray &ray) const;
 public:
   Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution);
 
   // Returns a 2d vector of all the pixel color values.
-  std::vector<std::vector<Vector3>> take_picture (const std::vector<Shape*> shapes) const;
+  std::vector<std::vector<Vector3>> take_picture (const std::vector<Shape*> &shapes) const;
 };
 
 Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution) :
@@ -102,12 +103,29 @@ Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, d
   }
 }
 
-Hit_Info Camera::calculate_ray_collision (const Ray &ray) const {
-  Hit_Info closest;
+Hit_Info Camera::calculate_ray_collision (const std::vector<Shape*> &shapes, const Ray &ray) const {
+  unsigned long num_shapes {shapes.size()};
+
+  // Anything will be closer than the max double.
+  Hit_Info closest {false, std::numeric_limits<double>::max()};
+
+  // Loop over each shape and find if it hits the ray.
+  Hit_Info temp_hit_info;
+  for (const auto *shape : shapes) {
+    temp_hit_info = shape->hit(ray, false);
+
+    if (temp_hit_info.hit) {
+      // If the ray hits the shape, check if it is the closest hit.
+      if (temp_hit_info.distance < closest.distance) {
+	closest = temp_hit_info;
+      }
+    }
+  }
+  
   return closest;
 }
 
-std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*> shapes) const {
+std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*> &shapes) const {
   unsigned long num_shapes {shapes.size()};
   
   std::vector<std::vector<Vector3>> colors;
@@ -117,29 +135,7 @@ std::vector<std::vector<Vector3>> Camera::take_picture (const std::vector<Shape*
   for (int x {0}; x < horizontal_resolution; x++) {
     colors[x].resize(vertical_resolution);
     for (int y {0}; y < vertical_resolution; y++) {
-      Hit_Info hit_infos[num_shapes] {};
-      
-      // Loop over each shape and find if it hits the ray.
-      int num_intersections {0};
-      Hit_Info temp_hit_info;
-
-      int i {0};
-      for (const auto *shape : shapes) {
-	temp_hit_info = shape->hit(rays[x][y], false);
-	
-	if (temp_hit_info.hit) {
-	  num_intersections++;
-	  hit_infos[i++] = temp_hit_info;
-	}
-      }
-
-      // Find the hit_info with the shortest distance to the ray.
-      Hit_Info *closest {hit_infos};
-      for (int hit_info {1}; hit_info < num_intersections; hit_info++) {
-	if (hit_infos[hit_info].is_closer_than(*closest)) closest = hit_infos + hit_info;
-      }
-
-      colors[x][y] = closest->material.color;
+      colors[x][y] = calculate_ray_collision(shapes, rays[x][y]).material.color;
       /*      if (colors[x][y][0] != 0) {
 	std::cout << "colors[" << x << "][" << y << "] = " << colors[x][y] << "\n";
 	}*/

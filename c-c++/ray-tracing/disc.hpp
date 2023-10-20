@@ -38,7 +38,11 @@ Hit_Info Disc::hit (const Ray &ray, const bool debug) const {
 
   hit_info.hit = true;
   hit_info.distance = distance;
-  hit_info.normal = normal;
+  // If the ray is hitting the disc from behind, then I need to invert the normal.
+  // Check if the ray is behind the disc with dot(ray.direction(), normal)
+  // I already do this with the denominator.
+  if (denominator > 0) hit_info.normal = normal;
+  else hit_info.normal = -normal;
   hit_info.material = material;
   
   return hit_info;

@@ -20,9 +20,9 @@ public:
   inline double b () const {return v[2];}
 
   // +Vector3
-  inline Vector3 operator+ () {return *this;}
+  inline Vector3 operator+ () const {return *this;}
   // -Vector3
-  inline Vector3 operator- () {return Vector3(-v[0], -v[1], -v[2]);}
+  inline Vector3 operator- () const {return Vector3(-v[0], -v[1], -v[2]);}
   
   inline double operator[] (int i) const {return v[i];}
   inline double& operator[] (int i) {return v[i];}

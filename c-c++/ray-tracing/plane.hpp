@@ -52,7 +52,9 @@ Hit_Info Plane::hit (const Ray &ray, const bool debug) const {
   hit_info.hit = true;
   hit_info.distance = distance;
   hit_info.hit_point = ray.point_at_distance(distance);
-  hit_info.normal = normal;
+  // Check if the ray hits from behind the plane, if so invert the normal.
+  if (dot(ray.direction(), normal) > 0) hit_info.normal = normal;
+  else hit_info.normal = -normal;
   hit_info.material = material;
   
   return hit_info;
