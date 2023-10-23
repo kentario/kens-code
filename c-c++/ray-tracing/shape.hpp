@@ -8,6 +8,7 @@
 
 struct Material {
   Vector3 color;
+  
 };
 
 inline std::ostream& operator<< (std::ostream &os, const Material &material) {

@@ -75,7 +75,7 @@ int main () {
   Camera my_camera{{0, 0, 0}, {1, 0, 0},              110,            800,                 800,          shapes};
   
   std::cout << "Taking picture...\n";
-  std::vector<std::vector<Vector3>> colors = my_camera.take_picture();
+  std::vector<std::vector<Vector3>> colors = my_camera.take_picture(1);
 
   std::string file_name {"example.ppm"};
 

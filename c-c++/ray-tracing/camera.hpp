@@ -32,12 +32,12 @@ private:
 
   Hit_Info calculate_ray_collision (const Ray &ray) const;
 
-  Vector3 trace_ray (const Ray &ray) const;
+  Vector3 trace_ray (Ray ray, const int num_bounces) const;
 public:
   Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution, std::vector<Shape*> shapes);
 
   // Returns a 2d vector of all the pixel color values.
-  std::vector<std::vector<Vector3>> take_picture () const;
+  std::vector<std::vector<Vector3>> take_picture (const int num_bounces) const;
 };
 
 Camera::Camera (Vector3 origin, Vector3 look_direction, double horizontal_fov, double horizontal_resolution, double vertical_resolution, std::vector<Shape*> shapes) :
@@ -129,13 +129,25 @@ Hit_Info Camera::calculate_ray_collision (const Ray &ray) const {
   return closest;
 }
 
-Vector3 Camera::trace_ray (const Ray &ray) const {
-  Vector3 color;
+// Trace the path of the ray as it bounces around the scene.
+Vector3 Camera::trace_ray (Ray ray, const int num_bounces) const {
+  Vector3 incoming_light;
+  Vector3 ray_color;
+  Hit_Info hit_info;
 
-  return color;
+  for (int i {0}; i < num_bounces; i++) {
+    hit_info = calculate_ray_collision(ray);
+    if (!hit_info.hit) {
+      // If the ray didn't hit anything, then it won't keep bouncing.
+      break;
+    }
+    
+  }
+  
+  return ray_color;
 }
 
-std::vector<std::vector<Vector3>> Camera::take_picture () const {
+std::vector<std::vector<Vector3>> Camera::take_picture (const int num_bounces) const {
   unsigned long num_shapes {shapes.size()};
   
   std::vector<std::vector<Vector3>> colors;
