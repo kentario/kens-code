@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <stdexcept>
 
 #ifndef __VECTOR3_HPP_
 #define __VECTOR3_HPP_
@@ -15,6 +16,7 @@ public:
   inline double x () const {return v[0];}
   inline double y () const {return v[1];}
   inline double z () const {return v[2];}
+  
   inline double r () const {return v[0];}
   inline double g () const {return v[1];}
   inline double b () const {return v[2];}
@@ -36,13 +38,14 @@ public:
   inline Vector3& operator/= (const double &value);
 
   inline Vector3& operator= (const Vector3 &other);
-
+  inline Vector3& operator= (const std::initializer_list<double> &list);
+  
   inline double distance_squared () const {return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];}
   inline double distance () const {return std::sqrt(distance_squared());}
   inline double distance_squared (const Vector3 &a) const;
   inline double distance (const Vector3 &a) const;
 
-  inline void normalize ();
+  inline Vector3 normalize ();
 
   inline Vector3 cross (const Vector3 &b) const;
 };
@@ -141,7 +144,22 @@ inline Vector3& Vector3::operator= (const Vector3 &other) {
   return *this;
 }
 
-inline void Vector3::normalize () {
+inline Vector3& Vector3::operator= (const std::initializer_list<double> &list) {
+  if (list.size() >= 3) {
+    // Loop over the first 3 elements of the initializer list and initialize the Vector3 with it.
+    auto iterator = list.begin();
+
+    v[0] = *iterator++;
+    v[1] = *iterator++;
+    v[2] = *iterator++;
+  } else {
+    throw std::invalid_argument("Initializer list is too small for Vector3");
+  }
+  
+  return *this;
+}
+
+inline Vector3 Vector3::normalize () {
   const double length = distance();
 
   if (!(length == 0 || length == 1)) {
@@ -149,6 +167,8 @@ inline void Vector3::normalize () {
     v[1] /= length;
     v[2] /= length;
   }
+
+  return *this;
 }
 
 inline double Vector3::distance_squared (const Vector3 &a) const {

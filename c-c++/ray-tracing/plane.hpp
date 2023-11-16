@@ -21,6 +21,10 @@ public:
 };
 
 Hit_Info Plane::hit (const Ray &ray, const bool debug) const {
+  if (debug) {
+    std::cout << "Printing from Plane::hit\n";
+    std::cout << "The input ray is: " << ray << "\n";
+  }
   Hit_Info hit_info {false};
 
   // A point on a plane can be defined as a point some distance from the origin perpendicular to the normal vector.
@@ -47,16 +51,17 @@ Hit_Info Plane::hit (const Ray &ray, const bool debug) const {
   if (debug) {
     std::cout << "numerator = " << numerator << "\n";
     std::cout << "distance = " << distance << "\n";
+    //    std::cout << 
   }
-  
+
   hit_info.hit = true;
   hit_info.distance = distance;
   hit_info.hit_point = ray.point_at_distance(distance);
   // Check if the ray hits from behind the plane, if so invert the normal.
-  if (dot(ray.direction(), normal) > 0) hit_info.normal = normal;
+  if (dot(ray.direction(), normal) < 0) hit_info.normal = normal;
   else hit_info.normal = -normal;
   hit_info.material = material;
-  
+
   return hit_info;
 }
 
