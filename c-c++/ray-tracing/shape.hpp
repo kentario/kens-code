@@ -90,7 +90,8 @@ Vector3 rand_in_unit_sphere () {
 }
 
 // Returns a random direction (not normalized) in a hemisphere pointing in the direction of hemisphere_normal.
-Vector3 rand_in_hemisphere (const Vector3 &hemisphere_normal) {
+Vector3 rand_in_hemisphere (const Vector3 &hemisphere_normal, const Vector3 &bounce_direction, const double reflectivity) {
+  // Create a random point in the hemisphere.
   Vector3 point {rand_in_unit_sphere()};
   // If the point is within the hemisphere of hemisphere_normal, then their dot product is positive.
   return point * (dot(hemisphere_normal, point) < 0 ? -1 : 1);

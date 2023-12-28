@@ -1,4 +1,10 @@
-build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial count-unique-digits
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial count-unique-digits pathfinding
+
+run-pathfinding: pathfinding
+	./pathfinding
+
+pathfinding: pathfinding.cpp
+	g++ -g $< -o $@ -std=c++20 -lSDL2
 
 count-unique-digits: count-unique-digits.cpp
 	g++ -g $< -o $@

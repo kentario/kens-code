@@ -22,7 +22,7 @@ void draw_scaled_point (SDL_Renderer *renderer, int scale, int x, int y, int typ
 }
 
 int main () {
-  int scale = 5;
+  int scale = 10;
   int width = 16, height = 16;
   int type[width/scale][height/scale];
   bzero(type, sizeof(type));

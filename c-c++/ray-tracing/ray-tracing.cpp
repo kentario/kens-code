@@ -67,6 +67,11 @@ int main () {
   Vector3 sphere_center {100, 0, 0};
   double sphere_radius {50};
   spheres.push_back(Sphere{sphere_material, sphere_center, sphere_radius});
+  sphere_color = {0, 0.686, 0};
+  sphere_material.color = sphere_color;
+  sphere_center = {75, -35, -20};
+  sphere_radius = 20;
+  spheres.push_back(Sphere{sphere_material, sphere_center, sphere_radius});
 
   std::cout << "Creating planes...\n";
   std::vector<Plane> planes;
@@ -111,19 +116,19 @@ int main () {
   for (auto &disc : discs) {
     shapes.push_back(&disc);
   }
-
+  // 6 5
   std::cout << "Creating camera...\n";
-  Vector3 origin{0, 0, 0};
-  Vector3 look_direction{1, 0, 0};
+  Vector3 origin {0, 0, 0};
+  Vector3 look_direction {1, 0, 0};
   double horizontal_fov {110};
   int horizontal_resolution {800};
   int vertical_resolution {800};
-  int num_bounces {4};
+  int num_bounces {5};
   Camera my_camera {origin, look_direction, horizontal_fov, horizontal_resolution, vertical_resolution, num_bounces, shapes};
 
   std::cout << "Taking pictures...\n";
 
-  int num_samples {3};
+  int num_samples {5};
   std::vector<std::vector<std::vector<Vector3>>> pictures(num_samples);
   for (int i {0}; i < num_samples; i++) {
     pictures[i] = my_camera.take_picture();
