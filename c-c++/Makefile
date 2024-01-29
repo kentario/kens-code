@@ -1,4 +1,10 @@
-build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial count-unique-digits pathfinding
+build: sdl-hello-world mandelbrot game-of-life minesweeper key-mouse-sdl2 draw neural-network othello connect-4 3d-game tutorial count-unique-digits pathfinding test-osmium functions
+
+functions: functions.cpp
+	g++ -g $< -o $@
+
+test-osmium: test-osmium.cpp
+	g++ -g $< -o $@ -lz -lSDL2 -pthread -lxml2 -lexpat
 
 run-pathfinding: pathfinding
 	./pathfinding
