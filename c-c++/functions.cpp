@@ -21,7 +21,7 @@ class Function {
 protected:
   // Implementation of a linked list.
   std::shared_ptr<Function> next;
-  
+
   // A function is an operation on two other functions.
   std::shared_ptr<Function> a;
   std::shared_ptr<Function> b;
@@ -33,10 +33,10 @@ public:
 
   Function (const std::shared_ptr<Function> &next, const Function_Type type) :
     next {next}, a {nullptr}, b {nullptr}, symbol {}, type {type} {}
-  
+
   Function (const std::shared_ptr<Function> &next, const char symbol, const Function_Type type) :
     next {next}, a {nullptr}, b {nullptr}, symbol {symbol}, type {type} {}
-  
+
   Function (const std::shared_ptr<Function> &a, const std::shared_ptr<Function> &b, const char symbol, const Function_Type type) :
     next {nullptr}, a {a}, b {b}, symbol {symbol}, type {type} {}
 
@@ -55,9 +55,9 @@ public:
   }
 
   char get_symbol () const {return symbol;}
-  
+
   Function_Type get_type () const {return type;}
-  
+
   std::shared_ptr<Function> get_next() const {return next;}
   std::shared_ptr<Function> get_a () const {return a;}
   std::shared_ptr<Function> get_b () const {return b;}
@@ -65,7 +65,7 @@ public:
   void set_next (std::shared_ptr<Function> new_next) {next = new_next;}
   void set_a (std::shared_ptr<Function> new_a) {a = new_a;}
   void set_b (std::shared_ptr<Function> new_b) {b = new_b;}
-  
+
   virtual double evaluate (double input) const = 0;
 
   virtual std::ostream& print (std::ostream &os) const {
@@ -87,7 +87,7 @@ class Addition : public Function {
 public:
   Addition (const std::shared_ptr<Function> next) : Function {next, '+', Function_Type::ADDITION} {}
   Addition (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '+', Function_Type::ADDITION} {}
-  
+
   double evaluate (double input) const override {
     return a->evaluate(input) + b->evaluate(input);
   }
@@ -97,7 +97,7 @@ class Multiplication : public Function {
 public:
   Multiplication (const std::shared_ptr<Function> next) : Function {next, '*', Function_Type::MULTIPLICATION} {}
   Multiplication (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '*', Function_Type::MULTIPLICATION} {}
-  
+
   double evaluate (double input) const override {
     return a->evaluate(input) * b->evaluate(input);
   }
@@ -107,7 +107,7 @@ class Subtraction : public Function {
 public:
   Subtraction (const std::shared_ptr<Function> next) : Function {next, '-', Function_Type::SUBTRACTION} {}
   Subtraction (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '-', Function_Type::SUBTRACTION} {}
-  
+
   double evaluate (double input) const override {
     return a->evaluate(input) - b->evaluate(input);
   }
@@ -148,7 +148,7 @@ public:
   double evaluate (double input) const override {return value;}
   double evaluate () const {return value;}
   operator double() const {return value;}
-  
+
   std::ostream& print (std::ostream &os) const override {
     os << value;
     return os;
@@ -163,7 +163,7 @@ public:
   Variable (const std::shared_ptr<Function> next, const std::string &name) : Function {next, Function_Type::VARIABLE}, name {name} {}
 
   std::string get_name () const {return name;}
-  
+
   double evaluate (double input) const override {return input;}
 
   std::ostream& print (std::ostream &os) const override {
@@ -281,7 +281,7 @@ Token consume_variable (const std::string &input, size_t &current_index) {
     variable.push_letter(input[current_index]);
     current_index++;
   }
-  
+
   // In case there is a whitespace character after the end of the variable, or this is the end of the string, go back a character to the end of the variable, then go forwards a character.
   current_index--;
   return variable;
@@ -292,7 +292,7 @@ Token consume_number (const std::string &input, size_t &current_index) {
   Token number {Token_Type::NUMBER, current_index};
 
   bool decimal_found {false};
-      
+
   while (std::isdigit(input[current_index]) || (input[current_index] == '.')) {
     if (input[current_index] == '.') {
       // Only allow one decimal point per number.
@@ -305,7 +305,7 @@ Token consume_number (const std::string &input, size_t &current_index) {
     number.push_letter(input[current_index]);
     current_index++;
   }
-  
+
   current_index--;
   return number;
 }
@@ -337,7 +337,7 @@ std::vector<Token> tokenize (const std::string &input, const std::vector<std::st
       if (operation == input.substr(i, operation.size())) {
 	tokens.push_back(Token {Token_Type::OPERATOR, operation, i});
 	i += operation.size() - 1;
-	
+
 	operation_found = true;
 	continue;
       }
@@ -384,66 +384,6 @@ std::shared_ptr<Function> token_to_function (const Token &token) {
   return output;
 }
 
-
-#if 0
-// Recursively generates a tree from the linked list of a function, going from [beginning, end).
-std::shared_ptr<Function> generate_tree (std::shared_ptr<Function> &beginning, const std::shared_ptr<Function> &end) {
-  auto root = beginning;
-  // Print the current segment.
-  for (auto i = beginning; i != end; i = i->get_next()) {
-    std::cout << *i << " ";
-  }
-  std::cout << "\n";
-  
-  // Make sure the first node is always either a constant, variable, or an open parenthesis.
-  Function_Type first_type {p->get_type()};
-  if (first_type != Function_Type::CONSTANT &&
-      first_type != Function_Type::VARIABLE &&
-      first_type != Function_Type::OPEN_PARENTHESIS) {
-    throw std::runtime_error {"Invalid start of expression: '" + std::string {p->get_symbol()} + "'"};
-  }
-  
-  // Look for exponenets.
-  for (auto p = beginning; p != end; p = p->get_next()) {
-        // If there is another node,
-    if (p->get_next() &&
-	// And that node is an exponent,
-	p->get_next()->get_type() == Function_Type::EXPONENT &&
-	// And there is another node after that node,
-	p->node_at(2)) {
-      // Set the base of the exponent to the value on the left.
-      p->get_next()->set_a(p);
-      // Set the power of the exponent to the value on the right.
-      p->get_next()->set_b(p->node_at(2));
-      
-      if (p->node_at(3)) {
-	p->get_next()->set_next(p->node_at(3));
-      }
-    }
-  }
-  
-  // Look for multiplication and division.
-  for (auto p = beginning; p != end; p = p->get_next()) {
-    if (p->get_next() &&
-	(p->get_next()->get_type() == Function_Type::MULTIPLICATION || p->get_next()->get_type() == Function_Type::DIVISION) &&
-	p->node_at(2)) {
-      
-    }
-  }
-  
-  // Look for addition and subtraction.
-  for (auto p = beginning; p != end; p = p->get_next()) {
-    if (p->get_next() &&
-	(p->get_next()->get_type() == Function_Type::ADDITION || p->get_next()->get_type() == Function_Type::SUBTRACTION) &&
-	p->node_at(2)) {
-      
-    }
-  }
-  
-  return root;
-}
-#endif
-
 /*
 beginning = x
 beginning->get_next = ^
@@ -456,34 +396,101 @@ end = NULL
 
 // Recursively generates a tree from the linked list of a function, going from [beginning, end).
 std::shared_ptr<Function> generate_tree (const std::shared_ptr<Function> &beginning, const std::shared_ptr<Function> &end) {
-  auto root = beginning;
+  // Print out the linked list.
+  for (auto p = beginning; p != end; p = p->get_next()) {
+    std::cout << *p << " ";
+  }
+  std::cout << "\n";
+
+  if (beginning->get_next() == end) return beginning;
+
   // Check if it is a simple form with just addition and subtraction such as 3 + 2 - 1 - 4 + 2
   // Or with just multiplication and division.
-  for (auto p = beginning; p != end; p = p->get_next()) {
+  // A simple form should have an odd number of elements.
+  // Even indexes should be operands, and odd indexes should be operators.
+  bool is_simple {true};
+  size_t i {0};
+  Function_Type types[2];
+  for (auto p = beginning; p != end; p = p->get_next(), i++) {
+    if (i % 2 == 0) {
+      // Should be an operand.
+      if (!is_operand(p)) {
+	is_simple = false;
+	break;
+      }
+    } else {
+      // Should be an operator.
+      if (i == 1) {
+	// If it is the first operator, then find out if it is addition and subtraction, or multiplication and division.
+	switch (p->get_type()) {
+	case Function_Type::ADDITION:
+	case Function_Type::SUBTRACTION:
+	  types[0] = Function_Type::ADDITION;
+	  types[1] = Function_Type::SUBTRACTION;
+	  break;
+	case Function_Type::MULTIPLICATION:
+	case Function_Type::DIVISION:
+	  types[0] = Function_Type::MULTIPLICATION;
+	  types[1] = Function_Type::DIVISION;
+	}
+      } else {
+	// If it is not the first operator, then check if it is in the same category as the first operator.
+	if (p->get_type() != types[0] &&
+	    p->get_type() != types[1]) {
+	  is_simple = false;
+	  break;
+	}
+      }
+    }
   }
 
-  return root;
+  // If there are an even number of nodes, then it is not simple.
+  if (i % 2 == 0) is_simple = false;
+
+  std::cout << "is simple: " << is_simple << "\n";
+
+  /*
+	  +
+	 / \
+        -   2
+       / \
+      +   5
+     / \
+    3   x
+   */
+  if (is_simple) {
+    auto root = beginning->get_next();
+    auto p = beginning;
+    for (; root->node_at(2); root->set_next(root->node_at(2)), p = root, root = root->get_next()) {
+      root->set_a(p);
+      root->set_b(p->node_at(2));
+    }
+    
+    return p;
+  }
+
+  return nullptr;
 }
 
 std::shared_ptr<Function> build_function (const std::vector<Token> &tokens) {
   std::shared_ptr<Function> function {token_to_function(tokens[0])};
-  
+
   // Converts the vector of tokens to a linked list of functions.
   for (size_t i {1}; i < tokens.size(); i++) {
     function->node_at(i) = token_to_function(tokens[i]);
   }
-  
+
   function = generate_tree(function, nullptr);
-  
+
   return function;
 }
 
 int main () {
   // Current list of possible operations:
   const std::vector<std::string> operations {"+", "*", "-", "/", "^", "(", ")"};
-  
+
   //                     0123456789
-  std::string function {"3 + x - 5 + 1"};
+  std::string function {"9 - 5 + 7 + x"};
   std::vector<Token> tokenized_function {tokenize(function, operations)};
   for (const auto &token : tokenized_function) {
     std::cout << token << "\n";
@@ -491,21 +498,14 @@ int main () {
   std::cout << "\n";
 
   auto g = build_function(tokenized_function);
-  std::cout << *g << "\n";
-  /*
-  // Print the linked list of g.
-  for (auto p = g; p; p = p->get_next()) {
-    std::cout << *p << " ";
-  }
-  std::cout << "\n";
-  */
+  std::cout << "Formula of g: " << *g << "\n";
 
-  auto f = make_function<Exponent>(make_function<Addition>(make_constant(2), make_constant(5.1)), make_variable("X"));
-  
+  /*auto f = make_function<Exponent>(make_function<Addition>(make_constant(2), make_constant(5.1)), make_variable("X"));
+
   std::cout << f->evaluate(3) << "\n";
 
   // Print the tree of f.
-  std::cout << *f << "\n";
-  
+  std::cout << *f << "\n";*/
+
   return 0;
 }
