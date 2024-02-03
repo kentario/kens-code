@@ -1,4 +1,4 @@
-build: custom-operators compile-time-prime hello-world
+build: custom-operators compile-time-prime hello-world pathfinding
 
 custom-operators: custom-operators.cpp
 	g++ $< -o $@
@@ -8,3 +8,10 @@ compile-time-prime: compile-time-prime.cpp
 
 hello-world: hello-world.cpp
 	g++ $< -o $@
+
+run-pathfinding: pathfinding
+	./pathfinding
+
+pathfinding: pathfinding.cpp
+	g++ -g $< -o $@ -std=c++20 -lSDL2
+
