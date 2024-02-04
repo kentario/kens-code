@@ -6,6 +6,9 @@ custom-operators: custom-operators.cpp
 compile-time-prime: compile-time-prime.cpp
 	g++ -ftemplate-depth=2000 $< -o $@
 
+compile-time-prime-E.cpp: compile-time-prime.cpp
+	g++ -E -ftemplate-depth=2000 $< -o $@
+
 hello-world: hello-world.cpp
 	g++ $< -o $@
 
