@@ -1,0 +1,53 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		relearn-subroutine:	
+#
+#	(usage)% relearn-subroutine
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Thu Jun  4 08:14:12 2020	3.141592653589793238462643383279502
+
+use strict;
+
+use Time::HiRes qw( usleep );
+
+my $argc;
+
+analyze_list(@ARGV);
+
+my $words_per_minute = shift;
+my $characters_per_minute = $words_per_minute * 6;
+my $microseconds_per_character = 60000000 / $characters_per_minute;
+
+typing ($microseconds_per_character, "@ARGV");
+
+sub random_sleep {
+    my $average = shift;
+    my $duration = ($average / 2) + rand $average;
+    usleep $duration;
+}
+
+
+sub typing {
+    my $average = shift;
+    my $string = shift;
+    my @chars = split (//, $string);
+    foreach my $char (@chars) {
+	print STDERR $char;
+	random_sleep ($average);
+    }
+    print STDERR "\n";
+}
+
+sub analyze_list {
+    $argc = @_;
+    if ($argc < 2){
+	print "the argument had $argc word in it.\n";
+    } else {
+	print "the argument had $argc words in it.\n";
+    }
+    $argc = $argc * 2;
+    print "if you had doubled the number of words in the argument there would have been $argc words in the argument\n";
+}

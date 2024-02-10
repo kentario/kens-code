@@ -1,0 +1,24 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		test:	
+#
+#	(usage)% test
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Fri Nov 13 13:30:44 2020	3.141592653589793238462643383279502
+
+use strict;
+
+
+
+my $logic = shift @ARGV;
+print "$logic\n";
+if ($logic eq 'hello') {
+    print "meow\n";
+} elsif ($logic eq 'cat') {
+    print "you like cats\n";
+}else {
+    print "jasdlkfjsalkjfasld.\n";
+}

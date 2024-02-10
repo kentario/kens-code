@@ -1,0 +1,27 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		count-letters:	
+#
+#	(usage)% count-letters
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Sat Jun  6 16:45:01 2020	3.141592653589793238462643383279502
+
+use strict;
+
+my %count;
+foreach my $arg (@ARGV) {
+    my @letters = split (//, $arg);
+    foreach my $letter (@letters) {
+	$count{$letter}++;
+    }
+}
+
+my @letters = keys %count;
+my @sorted_letters = sort @letters;
+
+foreach my $key (@sorted_letters) {
+    print "found \$count{$key} $count{$key}\n";
+}

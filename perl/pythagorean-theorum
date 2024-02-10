@@ -1,0 +1,19 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		pythagorean-therum:	
+#
+#	(usage)% pythagorean-therum
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Fri Nov 13 13:56:14 2020	3.141592653589793238462643383279502
+
+use strict;
+
+my $side = shift @ARGV;
+my $side2 = shift @ARGV;
+
+my $hypotenuse = (($side * $side) + ($side2 * $side2));
+$hypotenuse = sqrt($hypotenuse);
+print $hypotenuse, "\n";

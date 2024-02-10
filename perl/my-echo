@@ -1,0 +1,31 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		my-echo:	prints arguments
+#
+#	(usage)% my-echo
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Fri May 29 08:35:23 2020	3.141592653589793238462643383279502
+
+use strict;
+
+my $output;
+foreach my $thisarg (@ARGV) {
+    $output .= " " . $thisarg;
+}
+
+$output = substr $output, 1;
+
+print $output, "\n";
+
+#print @ARGV, "\n";
+
+#print "kentaro was here" . " kentaro was not here" . "\n";
+
+#my @kentaro = (1,2,3,4);
+
+#for (@kentaro) {
+#    print "hello\n"
+#}

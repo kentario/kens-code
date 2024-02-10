@@ -1,0 +1,199 @@
+#!/usr/bin/perl
+
+use strict;
+
+# Character is the first element in @objects. All other elements are obstacles.
+
+my $input;
+
+my @objects;
+
+my $size_x = shift;
+my $size_y = shift;
+
+my $keep_moving;
+my $mode = "main_menu";
+
+my $character_icon = shift // "@";
+push @objects, {icon => $character_icon, x => int(rand($size_x)) + 1, y => int(rand($size_y)) + 1};
+my @object_icons = qw(# $ % ^ & * + - _ =);
+my $empty_space = ".";
+
+my %dir_key;
+$dir_key{up} = "w";
+$dir_key{left} = "a";
+$dir_key{down} = "s";
+$dir_key{right} = "d";
+$dir_key{move} = "move";
+
+foreach my $icon (@object_icons) {
+    push @objects, {icon => $icon, x => int(rand($size_x)) + 1, y => int(rand($size_y)) + 1};
+    print "Object $#objects : $icon\n";
+}
+
+print "\n";
+
+do {
+    if ($mode eq "main_menu") {
+	$keep_moving = main_menu ();
+    } elsif ($mode eq "grid") {
+	$keep_moving = grid_move ();
+    } elsif ($mode eq "settings") {
+	$keep_moving = settings ();
+    } elsif ($ mode eq "settings_controlls") {
+	$keep_moving = settings_controlls();
+    }
+} while ($keep_moving);
+
+sub main_menu {
+    print "main menu\n";
+    print <<EOF;
+    Main Menu:
+
+    Play
+    Settings
+    Quit
+EOF
+    $input = <>;
+    chomp $input;
+    if ($input eq "quit") {
+	exit;
+    } elsif ($input eq "play") {
+	$mode = "grid";
+    } elsif ($input eq "settings") {
+	$mode = "settings";
+    }
+    return 1;
+}
+
+sub settings {
+    print <<EOF;
+    Settings:
+    
+    Controlls
+EOF
+    $input = <>;
+    chomp $input;
+    if ($input eq "exit") {
+	$mode = "main_menu";
+    } elsif ($input eq "controlls") {
+	$mode = "settings_controlls";
+    }
+    return 1;
+}
+
+sub settings_controlls {
+    print <<EOF;
+    up: $dir_key{up}
+    left: $dir_key{left}
+    down: $dir_key{down}
+    right: $dir_key{right}
+
+    move: $dir_key{move}
+
+    If you want to change on of the bindings, do {key name}{key binding}
+EOF
+    $input = <>;
+    chomp $input;
+    if ($input =~ /(up|left|down|right|move)(.+)/) {
+	$dir_key{$1} = $2;
+    }
+    if ($input eq "exit") {
+	$mode = "settings";
+    }
+    return 1;
+}
+
+sub grid_move {
+    foreach my $current_column(1 ... $size_y) {
+	foreach my $current_row (1 ... $size_x) {
+	    my $here = $empty_space;
+	  OBJLOOP: foreach my $objid (0 .. $#objects) {
+	      if ($current_row == $objects[$objid]{x} && $current_column == $objects[$objid]{y}) {
+		  $here = $objects[$objid]{icon};
+		  last OBJLOOP;
+	      }
+	  }
+	    print $here;
+	    if ($input =~ /$dir_key{move}(\d+)/) {
+		if ($1 > 0 && $1 <= $#objects) {
+		    $objects[$1]{x} = $objects[0]{x};
+		    $objects[$1]{y} = $objects[0]{y};
+		}
+	    }
+	    $current_row += 1;
+	}
+	print "\n";
+    }
+    $input = <>;
+    chomp $input;
+    if ($input eq "exit") {
+	$mode = "main_menu";
+    }
+    if ($input =~ /($dir_key{up}|$dir_key{left}|$dir_key{down}|$dir_key{right})\s*(\d+)/) {
+	my $direction = $1;
+	my $distance = $2;
+	while ($distance > 0) {
+	    if ($direction eq "$dir_key{up}") {
+		$objects[0]{y} = $objects[0]{y} - 1;
+		if ($objects[0]{y} < 1) {
+		    $objects[0]{y} = 1;
+		} else {
+		    foreach my $objid (1 .. $#objects) {
+			if (same_loc ($objects[0]{x}, $objects[0]{y}, $objects[$objid]{x}, $objects[$objid]{y})) {
+			    $objects[0]{y} = $objects[0]{y} + 1;
+			}
+		    }
+		}
+	    }
+	    if ($direction eq "$dir_key{left}") {
+		$objects[0]{x} = $objects[0]{x} - 1;
+		if ($objects[0]{x} < 1) {
+		    $objects[0]{x} = 1;
+		} else {
+		    foreach my $objid (1 .. $#objects) {
+			if (same_loc ($objects[0]{x}, $objects[0]{y}, $objects[$objid]{x}, $objects[$objid]{y})) {
+			    $objects[0]{x} = $objects[0]{x} + 1;
+			}
+		    }
+		}
+	    }
+	    if ($direction eq "$dir_key{down}") {
+		$objects[0]{y} = $objects[0]{y} + 1;
+		if ($objects[0]{y} > $size_y) {
+		    $objects[0]{y} = $size_y;
+		} else {
+		    foreach my $objid (1 .. $#objects) {
+			if (same_loc ($objects[0]{x}, $objects[0]{y}, $objects[$objid]{x}, $objects[$objid]{y})) {
+			    $objects[0]{y} = $objects[0]{y} - 1;
+			}
+		    }
+		}
+	    }
+	    if ($direction eq "$dir_key{right}") {
+		$objects[0]{x} = $objects[0]{x} + 1;
+		if ($objects[0]{x} > $size_x) {
+		    $objects[0]{x} = $size_x;
+		} else {
+		    foreach my $objid (1 .. $#objects) {
+			if (same_loc ($objects[0]{x}, $objects[0]{y}, $objects[$objid]{x}, $objects[$objid]{y})) {
+			    $objects[0]{x} = $objects[0]{x} - 1;
+			}
+		    }
+		}
+	    }
+	    $distance--;
+	}
+    }
+    return 1;
+}
+
+sub same_loc {
+    my $thing1_x = shift;
+    my $thing1_y = shift;
+    my $thing2_x = shift;
+    my $thing2_y = shift;
+
+    return 1 if ($thing1_x == $thing2_x and $thing1_y == $thing2_y);
+    return undef;	
+}

@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+#	-*- Perl -*-		dave:	
+#
+#	(usage)% dave
+#
+#	Inputs:		
+#			
+#	Outputs:		
+#
+#	Kentaro Wuertele	Sun Oct 16 15:41:31 2022	3.141592653589793238462643383279502
+
+use strict;
+
+my $i;
+for ($i=-2; $i<=1.6; $i+=0.2) {
+    print "\$i = $i\n";
+}
+
+my $dave = undef;
+my @array;
+$array[1][2] = undef;
+

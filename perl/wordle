@@ -1,0 +1,21 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $word = shift;
+my $word_length = length($word);
+
+while (1) {
+    my $input = <>;
+    chomp $input;
+    my $number_of_letters = 0;
+    my @letters = split (//, $input);
+    foreach my $letter (@letters) {
+	$number_of_letters += 1;
+    }
+    if ($number_of_letters != $word_length) {
+	print "Please change the number of letters to $word_length\n";
+    } elsif ($word eq $input) {
+	print "You win\n";
+    }    
+}

@@ -1,0 +1,10 @@
+#!/usr/bin/perl
+
+$thing = shift;
+$thing2 = shift;
+
+if ($thing =~ /$thing2/) {
+    print "Match.\n";
+} else {
+    print "No Match.\n";
+}
