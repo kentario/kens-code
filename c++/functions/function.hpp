@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "linked-list.hpp"
-
 enum class Function_Type {
   ADDITION,
   MULTIPLICATION,

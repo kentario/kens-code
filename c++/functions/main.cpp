@@ -3,7 +3,6 @@
 
 #include "function.hpp"
 #include "token.hpp"
-#include "linked-list.hpp"
 
 typedef std::shared_ptr<Function> function_pointer;
 
@@ -137,38 +136,6 @@ int main () {
 #endif
 
 int main () {
-  auto first_node = make_linked_list(0, 1, 2, 3, 4, 5);
-  
-  auto last_node = first_node;
-  
-  for (auto p = first_node;; p = p->next) {
-    std::cout << p->data << " ";
-    if (!p->next) {
-      last_node = p;
-      break;
-    }
-  } std::cout << "\n";
-  
-  insert_node(first_node, first_node->node_at(3), 10);
-  
-  for (auto p = first_node;; p = p->next) {
-    std::cout << p->data << " ";
-    if (!p->next) {
-      last_node = p;
-      break;
-    }
-  } std::cout << "\n";
-
-  auto new_node = std::make_shared<Node<int>>(200);
-  
-  for (auto p = first_node;; p = p->next) {
-    std::cout << p->data << " ";
-    if (!p->next) {
-      last_node = p;
-      break;
-    }
-  } std::cout << "\n";
-
-  
+  std::cout << "hi";
   return 0;
 }
