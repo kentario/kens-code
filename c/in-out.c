@@ -3,9 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int
-main (int ac, char *av[])
-{
+int main (int argc, char *arg[]) {
   while (1) {
     char buffer[100];
     ssize_t read_this_much = read(STDIN_FILENO, buffer, 99);

@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 int
-main (int ac, char *av[])
+main (int argc, char *argv[])
 {
   if (ac < 2) {
     fprintf (stderr, "Usage:  test <string>\n");
