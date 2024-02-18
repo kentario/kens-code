@@ -21,9 +21,6 @@ enum class Function_Type {
 
 class Function {
 protected:
-  // Implementation of a linked list.
-  std::shared_ptr<Function> next;
-
   // A function is an operation on two other functions.
   std::shared_ptr<Function> a;
   std::shared_ptr<Function> b;
@@ -31,46 +28,22 @@ protected:
   char symbol;
   Function_Type type;
 public:
-  Function (const Function_Type type) : type {type} {}
+  Function (const Function_Type type) :
+    a {nullptr}, b {nullptr}, symbol {}, type {type} {}
 
-  Function (const std::shared_ptr<Function> &next, const Function_Type type) :
-    next {next}, a {nullptr}, b {nullptr}, symbol {}, type {type} {}
-
-  Function (const std::shared_ptr<Function> &next, const char symbol, const Function_Type type) :
-    next {next}, a {nullptr}, b {nullptr}, symbol {symbol}, type {type} {}
+  Function (const char symbol, const Function_Type type) :
+    a {nullptr}, b {nullptr}, symbol {symbol}, type {type} {}
 
   Function (const std::shared_ptr<Function> &a, const std::shared_ptr<Function> &b, const char symbol, const Function_Type type) :
-    next {nullptr}, a {a}, b {b}, symbol {symbol}, type {type} {}
-
-  /*
-  std::shared_ptr<Function>& operator[] (size_t index) {
-    if (index == 1) return next;
-    if (next) return (*next)[index - 1];
-    throw std::out_of_range {"Index out of bounds"};
-  }
-  */
-
-  std::shared_ptr<Function>& node_at (size_t index) {
-    if (index == 1) return next;
-    if (next) return next->node_at(index - 1);
-    throw std::out_of_range {"Index out of bounds"};
-  }
-
-  bool node_at_exists (size_t index) {
-    if (index == 1) return next.get();
-    if (next) return next->node_at_exists(index - 1);
-    return false;
-  }
+    a {a}, b {b}, symbol {symbol}, type {type} {}
 
   char get_symbol () const {return symbol;}
 
   Function_Type get_type () const {return type;}
 
-  std::shared_ptr<Function> get_next() const {return next;}
   std::shared_ptr<Function> get_a () const {return a;}
   std::shared_ptr<Function> get_b () const {return b;}
 
-  void set_next (std::shared_ptr<Function> new_next) {next = new_next;}
   void set_a (std::shared_ptr<Function> new_a) {a = new_a;}
   void set_b (std::shared_ptr<Function> new_b) {b = new_b;}
 
@@ -87,14 +60,16 @@ public:
   }
 };
 
+typedef std::shared_ptr<Function> function_pointer;
+
 std::ostream& operator<< (std::ostream &os, const Function &func) {
   return func.print(os);
 }
 
 class Addition : public Function {
 public:
-  Addition (const std::shared_ptr<Function> next) : Function {next, '+', Function_Type::ADDITION} {}
-  Addition (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '+', Function_Type::ADDITION} {}
+  Addition () : Function {Function_Type::ADDITION} {}
+  Addition (const function_pointer a, const function_pointer b) : Function {a,  b, '+', Function_Type::ADDITION} {}
 
   double evaluate (double input) const override {
     return a->evaluate(input) + b->evaluate(input);
@@ -103,8 +78,8 @@ public:
 
 class Multiplication : public Function {
 public:
-  Multiplication (const std::shared_ptr<Function> next) : Function {next, '*', Function_Type::MULTIPLICATION} {}
-  Multiplication (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '*', Function_Type::MULTIPLICATION} {}
+  Multiplication () : Function {'*', Function_Type::MULTIPLICATION} {}
+  Multiplication (const function_pointer a, const function_pointer b) : Function {a,  b, '*', Function_Type::MULTIPLICATION} {}
 
   double evaluate (double input) const override {
     return a->evaluate(input) * b->evaluate(input);
@@ -113,8 +88,8 @@ public:
 
 class Subtraction : public Function {
 public:
-  Subtraction (const std::shared_ptr<Function> next) : Function {next, '-', Function_Type::SUBTRACTION} {}
-  Subtraction (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '-', Function_Type::SUBTRACTION} {}
+  Subtraction () : Function {'-', Function_Type::SUBTRACTION} {}
+  Subtraction (const function_pointer a, const function_pointer b) : Function {a,  b, '-', Function_Type::SUBTRACTION} {}
 
   double evaluate (double input) const override {
     return a->evaluate(input) - b->evaluate(input);
@@ -123,8 +98,8 @@ public:
 
 class Division : public Function {
 public:
-  Division (const std::shared_ptr<Function> next) : Function {next, '/', Function_Type::DIVISION} {}
-  Division (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a,  b, '/', Function_Type::DIVISION} {}
+  Division () : Function {'/', Function_Type::DIVISION} {}
+  Division (const function_pointer a, const function_pointer b) : Function {a,  b, '/', Function_Type::DIVISION} {}
 
   double evaluate (double input) const override {
     double denominator {b->evaluate(input)};
@@ -138,8 +113,8 @@ public:
 
 class Exponent : public Function {
 public:
-  Exponent (const std::shared_ptr<Function> next) : Function {next, '^', Function_Type::EXPONENT} {}
-  Exponent (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) : Function {a, b, '^', Function_Type::EXPONENT} {}
+  Exponent () : Function {'^', Function_Type::EXPONENT} {}
+  Exponent (const function_pointer a, const function_pointer b) : Function {a, b, '^', Function_Type::EXPONENT} {}
 
   double evaluate (double input) const override {
     return std::pow(a->evaluate(input), b->evaluate(input));
@@ -151,7 +126,6 @@ private:
   const double value;
 public:
   explicit Constant (const double value) : Function {Function_Type::CONSTANT}, value {value} {}
-  Constant (const std::shared_ptr<Function> next, const double value) : Function {next, Function_Type::CONSTANT}, value {value} {}
 
   double evaluate (double input) const override {return value;}
   double evaluate () const {return value;}
@@ -168,7 +142,6 @@ private:
   const std::string name;
 public:
   explicit Variable (const std::string &name) : Function {Function_Type::VARIABLE}, name {name} {}
-  Variable (const std::shared_ptr<Function> next, const std::string &name) : Function {next, Function_Type::VARIABLE}, name {name} {}
 
   std::string get_name () const {return name;}
 
@@ -182,7 +155,7 @@ public:
 
 class Open_Parenthesis : public Function {
 public:
-  explicit Open_Parenthesis (const std::shared_ptr<Function> next)  : Function {next, Function_Type::OPEN_PARENTHESIS} {}
+  explicit Open_Parenthesis ()  : Function {Function_Type::OPEN_PARENTHESIS} {}
 
   double evaluate (double input) const override {throw std::logic_error {"Evaluation of open parenthesis not allowed"};}
 
@@ -194,7 +167,7 @@ public:
 
 class Close_Parenthesis : public Function {
 public:
-  explicit Close_Parenthesis (const std::shared_ptr<Function> next)  : Function {next, Function_Type::CLOSE_PARENTHESIS} {}
+  explicit Close_Parenthesis ()  : Function {Function_Type::CLOSE_PARENTHESIS} {}
 
   double evaluate (double input) const override {throw std::logic_error {"Evaluation of close parenthesis not allowed"};}
 
@@ -204,22 +177,22 @@ public:
   }
 };
 
-std::shared_ptr<Function> make_constant (const double value) {
+function_pointer make_constant (const double value) {
   return std::make_shared<Constant>(value);
 }
 
-std::shared_ptr<Function> make_variable (const std::string &name) {
+function_pointer make_variable (const std::string &name) {
   return std::make_shared<Variable>(name);
 }
 
 template <typename T>
-std::shared_ptr<Function> make_function (const std::shared_ptr<Function> a, const std::shared_ptr<Function> b) {
-  return std::make_shared<T>(a, b);
+function_pointer make_function () {
+  return std::make_shared<T>();
 }
 
 template <typename T>
-std::shared_ptr<Function> make_function (const std::shared_ptr<Function> next = nullptr) {
-  return std::make_shared<T>(next);
+function_pointer make_function (const function_pointer a, const function_pointer b) {
+  return std::make_shared<T>(a, b);
 }
 
 bool is_operator (const std::shared_ptr<const Function> &function) {

@@ -108,7 +108,6 @@ function_pointer build_function (const std::vector<Token> &tokens) {
   return function;
 }
 
-#if 0
 int main () {
   // Current list of possible operations:
   const std::vector<std::string> operations {"+", "*", "-", "/", "^", "(", ")"};
@@ -131,11 +130,5 @@ int main () {
     // Print the tree of f.
     std::cout << *f << "\n";*/
   
-  return 0;
-}
-#endif
-
-int main () {
-  std::cout << "hi";
   return 0;
 }

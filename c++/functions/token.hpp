@@ -129,8 +129,8 @@ std::vector<Token> tokenize (const std::string &input, const std::vector<std::st
   return tokens;
 }
 
-std::shared_ptr<Function> token_to_function (const Token &token) {
-  std::shared_ptr<Function> output;
+function_pointer token_to_function (const Token &token) {
+  function_pointer output;
   switch (token.get_type()) {
   case Token_Type::VARIABLE:
     output = make_variable(token.get_value());
