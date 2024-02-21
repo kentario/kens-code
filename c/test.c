@@ -5,14 +5,14 @@
 int
 main (int argc, char *argv[])
 {
-  if (ac < 2) {
+  if (argc < 2) {
     fprintf (stderr, "Usage:  test <string>\n");
     return -1;
   }
 
   int i;
-  for (i=1; i<ac; i++) {
-    printf ("Arg %d: %s\n", i, av[i]);
+  for (i=1; i<argc; i++) {
+    printf ("Arg %d: %s\n", i, argv[i]);
   }
   
   printf ("%s\n", "hello");
