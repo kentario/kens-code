@@ -30,8 +30,9 @@ echo
 
 echo command line substitution takes the command line output of a program, and saves it to a variable. When this happens, all the newlines are removed from the output.
 echo to do this, place the program in brackets, preceded by a $
-echo 'hello_world_output=$(./hello-world.sh)'
-hello_world_output=$(./hello-world.sh)
+echo this uses ../ because hello-world.sh is not in this directory.
+echo 'hello_world_output=$(.././hello-world.sh)'
+hello_world_output=$(.././hello-world.sh)
 echo $hello_world_output
 echo
 
