@@ -4,7 +4,7 @@ template <class T>
 class Circular_Buffer {
 private:
     T *buffer {};
-    int _buffer_size {};
+    int buffer_size_ {};
     
     // Points to the first element.
     T *start {};
@@ -12,10 +12,10 @@ private:
     T *end {};
     
     // The number of elements that are being stored in the buffer.
-    int _elements_used {};
+    int elements_used_ {};
 public:
     Circular_Buffer (int size) {
-        _buffer_size = size;
+        buffer_size_ = size;
         buffer = new T[size];
         // Both start and end point to the beginning of the buffer.
         // When start and end point to the same location, that means that the buffer is empty.
@@ -30,15 +30,15 @@ public:
     // Adds an element to the end.
     void add_element (const T &value) {
         // Only add an element if the number of elements is less then the maximum size.
-        if (_elements_used < _buffer_size) {
-            _elements_used++;
+        if (elements_used_ < buffer_size_) {
+            elements_used_++;
             
             *end = value;
             
             end++;
             
             // If end points to after the end of the array, then wrap around to the beginning.
-            if (end >= buffer + _buffer_size) {
+            if (end >= buffer + buffer_size_) {
                 end = buffer;
             }
         } else {
@@ -50,7 +50,7 @@ public:
     // Adds an array of elements to the end, if the array doesn't fit, then add nothing.
     void add_array_safe (const T *values, int size) {
         // Only add the elements if they all fit in the buffer.
-        if (_elements_used + size <= _buffer_size) {
+        if (elements_used_ + size <= buffer_size_) {
             for (int i {0}; i < size; i++) {
                 add_element(values[i]);
             }
@@ -64,7 +64,7 @@ public:
         int elements_added {};
         
         // Keep adding elements while there are elements to add, and there is still space left in the buffer.
-        while (elements_added < size && _elements_used < _buffer_size) {
+        while (elements_added < size && elements_used_ < buffer_size_) {
             add_element(values[elements_added]);
             elements_added++;
         }
@@ -73,13 +73,13 @@ public:
     // Removes an element from the beginning.
     void remove_first_element () {
         // Only remove an element if the number of elements is greater then 0.
-        if (_elements_used > 0) {
-            _elements_used--;
+        if (elements_used_ > 0) {
+            elements_used_--;
             
             start++;
             
             // If start points to after the end of the array, then wrap around to the beginning.
-            if (start >= buffer + _buffer_size) {
+            if (start >= buffer + buffer_size_) {
                 start = buffer;
             }
         } else {
@@ -89,12 +89,12 @@ public:
     }
     
     T& read_first_element () {
-        Only read if there are elements stored.
-        if (_elements_used > 0) {
-            return *start;
-        }
+      // Only read if there are elements stored.
+      if (elements_used_ > 0) {
+	return *start;
+      }
         
-        throw std::out_of_range("Buffer is empty. Cannot read first element.");
+      throw std::out_of_range("Buffer is empty. Cannot read first element.");
     }
     
     T& destructive_read_first_element () {
@@ -103,15 +103,15 @@ public:
         return temp_value;
     }
     
-    int buffer_size () {
-        return _buffer_size;
+    int buffer_size () const {
+        return buffer_size_;
     }
     
-    int elements_used () {
-        return _elements_used;
+    int elements_used () const {
+        return elements_used_;
     }
 };
 
-int main () {
-    return 0
+int main (int argc, char *argv[]) {
+  return 0;
 }
