@@ -18,10 +18,19 @@ int main (int argc, char *argv[]) {
     fprintf(stderr, "Usage: %s <PORT_NUMBER>\n", argv[0]);
     exit(1);
   }
+
+  const int BUFFER_SIZE = 1024;
+  char buffer[BUFFER_SIZE];
   
   const int PORT_NUMBER = atoi(argv[1]);
+
+  const int LISTEN_BACKLOG = 10;
+  
   // Allow a maximum of 10 connections to the socket.
   const int MAX_CONNECTIONS = 10;
+  int num_connections = 0;
+  int client_fds[MAX_CONNECTIONS];
+  bzero(client_fds, sizeof(client_fds));
 
   // Socket creates an endpoint and returns the file descriptor to that opened endpoint.
   // AF_INET means the domain will be IPv4 internect protocalls.
@@ -34,6 +43,13 @@ int main (int argc, char *argv[]) {
     error("Error openning socket");
   }
 
+  int opt = 1;
+
+  // Set the reuseaddr option of the server socket to true.
+  if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) < 0) {   
+    error("setsockopt");
+  }
+  
   struct sockaddr_in server_address;
   bzero(&server_address, sizeof(server_address));
 
@@ -47,47 +63,48 @@ int main (int argc, char *argv[]) {
     error("Binding error");
   }
 
-  if (listen(server_socket_fd, MAX_CONNECTIONS) < 0) {
+  if (listen(server_socket_fd, LISTEN_BACKLOG) < 0) {
     error("Listening error");
   }
 
+  printf("Waiting for connection on port %d\n", PORT_NUMBER);
+
   struct sockaddr_storage client_address;
   socklen_t client_address_len = sizeof(client_address);
-
-  printf("Waiting for connection on port %d\n", PORT_NUMBER);
   
-  int connection_fd = accept(server_socket_fd,
-			     (struct sockaddr *) &client_address,
-			     &client_address_len);
-
+  client_fds[num_connections] = accept(server_socket_fd,
+					   (struct sockaddr *) &client_address,
+					   &client_address_len);
+  if (client_fds[num_connections] < 0) {
+    error("Accept failure");
+  }
+  
+  num_connections++;
+  
   printf("Connection accepted\n");
 
-  char buffer[1024];
-  const int BUFFER_SIZE = 1024;
-  
   while (1) {
     bzero(buffer, BUFFER_SIZE);
-
-    if (read(connection_fd, buffer, strlen(buffer)) < 0) {
+    int n = read(client_fds[num_connections - 1], buffer, BUFFER_SIZE);
+    if (n < 0) {
       error("Error on reading");
     }
 
-    bzero(buffer, BUFFER_SIZE);
-    snprintf(buffer, BUFFER_SIZE, "HTTP/1.0 200 OK\r\n\r\nHello Isaac.");
-    write(connection_fd, buffer, strlen(buffer));
+    printf("Client: %s\n", buffer);
     
-    // Temporary
-    break;
-    //
-    
-    if (write(connection_fd, buffer, strlen(buffer)) < 0) {
+    if (write(client_fds[num_connections - 1], buffer, strlen(buffer)) < 0) {
       error("Error on writing");
     }
-    
-    printf("%s", buffer);
+
+    if (!strcmp(buffer, "end\n")) break;
   }
 
-  close(connection_fd);
+  for (int i = 0; i < num_connections; i++) {
+    if (client_fds[i] > 0) {
+      close(client_fds[i]);
+    }
+  }
+  
   close(server_socket_fd);
   
   return 0;
