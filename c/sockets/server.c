@@ -1,10 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <stdio.h>  
+#include <string.h>   //strlen  
+#include <stdlib.h>  
+#include <errno.h>  
+#include <unistd.h>   //close
 
+#include <arpa/inet.h>    //close  
+#include <sys/types.h>  
 #include <sys/socket.h>
-#include <sys/types.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
 
 #include <netinet/in.h>
 
@@ -69,36 +72,102 @@ int main (int argc, char *argv[]) {
 
   printf("Waiting for connection on port %d\n", PORT_NUMBER);
 
-  struct sockaddr_storage client_address;
-  socklen_t client_address_len = sizeof(client_address);
+  fd_set read_fds;
+  int max_fd;
+  int num_active;
+  while (1) {
+    FD_ZERO(&read_fds);
+    max_fd = -1;
+
+    // Only detect incoming connections if there is space in the client array.
+    if (num_connections < MAX_CONNECTIONS) {
+      FD_SET(server_socket_fd, &read_fds);
+
+      // Find the largest used file descriptor
+      max_fd = server_socket_fd;
+    } 
+
+    for (int i = 0; i < MAX_CONNECTIONS; i++) {
+      // If the client is active.
+      if (client_fds[i] > 0) {
+	FD_SET(client_fds[i], &read_fds);
+      }
+
+      if (client_fds[i] > max_fd) max_fd = client_fds[i];
+    }
+
+    if (max_fd < 0) {
+      fprintf(stderr, "No file descriptors");
+      exit(1);
+    }
+    
+    // Wait indefinitely for something to happen on a file descriptor
+    // Select will check every file descriptor up until max_fd.
+    num_active = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
+    
+    if ((num_active < 0) && (errno != EINTR)) {
+      error("Error with select");
+    }
+
+    // If the server socket was one of the active sockets, then handle an incoming connection.
+    if (FD_ISSET(server_socket_fd, &read_fds)) {
+      struct sockaddr_in client_address;
+      socklen_t client_address_len = sizeof(client_address);
   
-  client_fds[num_connections] = accept(server_socket_fd,
+      client_fds[num_connections] = accept(server_socket_fd,
 					   (struct sockaddr *) &client_address,
 					   &client_address_len);
-  if (client_fds[num_connections] < 0) {
-    error("Accept failure");
-  }
   
-  num_connections++;
+      if (client_fds[num_connections] < 0) {
+	error("Accept failure");
+      }
   
-  printf("Connection accepted\n");
-
-  while (1) {
-    bzero(buffer, BUFFER_SIZE);
-    int n = read(client_fds[num_connections - 1], buffer, BUFFER_SIZE);
-    if (n < 0) {
-      error("Error on reading");
-    }
-
-    printf("Client: %s\n", buffer);
+      // Print out information about the client.
+      printf("New connection on socket %d, ip of client is : %s, client is sending from port: %d\n",
+	     client_fds[num_connections],
+	     inet_ntoa(client_address.sin_addr),
+	     ntohs(client_address.sin_port));
     
-    if (write(client_fds[num_connections - 1], buffer, strlen(buffer)) < 0) {
-      error("Error on writing");
+      // Send a greeting message.
+      const char *message = "Welcome!";
+      size_t bytes_written = write(client_fds[num_connections], message, strlen(message));
+
+      if (bytes_written != strlen(message)) {
+	error("Write error");
+      }
+
+      num_connections++;
+      num_active--;
     }
 
-    if (!strcmp(buffer, "end\n")) break;
-  }
+    // If there is an action on some other file descriptor besides the server.
+    if (num_active > 0) {
+      for (int i = 0; i < MAX_CONNECTIONS; i++) {
+	if (client_fds[i] <= 0) continue;
 
+	if (FD_ISSET(client_fds[i], &read_fds)) {
+	  // If a client sent a message, or closed, then handle it.
+
+	  bzero(buffer, BUFFER_SIZE);
+	  size_t bytes_read = read(client_fds[i], buffer, BUFFER_SIZE);
+	  if (bytes_read == 0 || !strcmp(buffer, "end")) {
+	    close(client_fds[i]);
+	    client_fds[i] == 0;
+	    // TODO: Handle this better.
+	  } else if (bytes_read < 0) {
+	    error("Read error");
+	  } else {
+	    // Send back to the client.
+	    size_t bytes_written = write(client_fds[i], buffer, strlen(buffer));
+	    if (bytes_written != strlen(buffer)) {
+	      error("Write error");
+	    }
+	  }
+	}
+      }
+    }
+  }
+  
   for (int i = 0; i < num_connections; i++) {
     if (client_fds[i] > 0) {
       close(client_fds[i]);
