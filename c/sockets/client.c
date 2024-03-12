@@ -3,9 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <errno.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <netinet/in.h>
 
@@ -50,30 +52,55 @@ int main (int argc, char *argv[]) {
     error("Connection failed");
   }
 
+  fd_set read_fds;
+  int num_active;
+  
+  FD_ZERO(&read_fds);
+  FD_SET(client_socket_fd, &read_fds);
+  // 0 is for stdin
+  FD_SET(0, &read_fds);
   while (1) {
-    bzero(write_buffer, BUFFER_SIZE);
-    bzero(read_buffer, BUFFER_SIZE);
-    
-    printf("Type some stuff:\n");
-    size_t read_this_much = read(0, write_buffer, BUFFER_SIZE);
+    // Wait for either the user to input something, or for the server to send a message.
+    printf("waiting for activity\n");
+    num_active = select(client_socket_fd + 1, &read_fds, NULL, NULL, NULL);
+    printf("activity found\n");
 
-    if (read_this_much < 0) {
-      error("Error reading from user");
+    if ((num_active < 0) && (errno != EINTR)) {
+      error("Error with select");
     }
+
+    if (FD_ISSET(client_socket_fd, &read_fds)) {
+      bzero(read_buffer, BUFFER_SIZE);
       
-    size_t thislen = strlen(write_buffer);
-    if (write(client_socket_fd, write_buffer, thislen) < 0) {
-      error("Error on writing");
+      // Read from server.
+      ssize_t bytes_read = read(client_socket_fd, read_buffer, BUFFER_SIZE);
+
+      if (bytes_read < 0) {
+	error("Error reading from server");
+      } else if (bytes_read == 0) {
+	printf("Server closed");
+	break;
+      }
+      
+      printf("Server: %s", read_buffer);
+    } else if (FD_ISSET(0, &read_fds)) {      
+      bzero(write_buffer, BUFFER_SIZE);
+      
+      // Read from stdin.
+      ssize_t bytes_read = read(0, write_buffer, BUFFER_SIZE);
+
+      if (bytes_read < 0) {
+	error("Error reading from user");
+      }
+      // Write to server.
+      ssize_t bytes_written = write(client_socket_fd, write_buffer, strlen(write_buffer));
+
+      if (bytes_written != strlen(write_buffer)) {
+	error("Error writing to server");
+      }
+
+      if (!strcmp(write_buffer, "end\n")) break;
     }
-
-    read_this_much = read(client_socket_fd, read_buffer, BUFFER_SIZE);
-    if (read_this_much < 0) {
-      error("Error reading from server");
-    }
-
-    printf("Server: %s", read_buffer);
-
-    if (!strcmp(write_buffer, "end\n")) break;
   }
     
   close(client_socket_fd);

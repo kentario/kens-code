@@ -129,8 +129,8 @@ int main (int argc, char *argv[]) {
 	     ntohs(client_address.sin_port));
     
       // Send a greeting message.
-      const char *message = "Welcome!";
-      size_t bytes_written = write(client_fds[num_connections], message, strlen(message));
+      const char *message = "Welcome!\n";
+      ssize_t bytes_written = write(client_fds[num_connections], message, strlen(message));
 
       if (bytes_written != strlen(message)) {
 	error("Write error");
@@ -149,7 +149,7 @@ int main (int argc, char *argv[]) {
 	  // If a client sent a message, or closed, then handle it.
 
 	  bzero(buffer, BUFFER_SIZE);
-	  size_t bytes_read = read(client_fds[i], buffer, BUFFER_SIZE);
+	  ssize_t bytes_read = read(client_fds[i], buffer, BUFFER_SIZE);
 	  if (bytes_read == 0 || !strcmp(buffer, "end")) {
 	    close(client_fds[i]);
 	    client_fds[i] == 0;
@@ -158,7 +158,7 @@ int main (int argc, char *argv[]) {
 	    error("Read error");
 	  } else {
 	    // Send back to the client.
-	    size_t bytes_written = write(client_fds[i], buffer, strlen(buffer));
+	    ssize_t bytes_written = write(client_fds[i], buffer, strlen(buffer));
 	    if (bytes_written != strlen(buffer)) {
 	      error("Write error");
 	    }
