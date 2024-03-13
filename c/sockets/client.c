@@ -25,16 +25,16 @@ int main (int argc, char *argv[]) {
   const int BUFFER_SIZE = 1024;
   char write_buffer[BUFFER_SIZE];
   char read_buffer[BUFFER_SIZE];
-  
+
   const int PORT_NUMBER = atoi(argv[2]);
-  
+
   int client_socket_fd;
   if ((client_socket_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     error("Error openning socket");
   }
-  
+
   struct hostent *server;
-  
+
   server = gethostbyname(argv[1]);
   if (server == NULL) {
     error("Error, no such host");
@@ -59,7 +59,7 @@ int main (int argc, char *argv[]) {
     FD_ZERO(&read_fds);
     FD_SET(client_socket_fd, &read_fds);
     FD_SET(fileno(stdin), &read_fds);
-    
+
     // Wait for either the user to input something, or for the server to send a message.
     num_active = select(client_socket_fd + 1, &read_fds, NULL, NULL, NULL);
 
@@ -69,7 +69,7 @@ int main (int argc, char *argv[]) {
 
     if (FD_ISSET(client_socket_fd, &read_fds)) {
       bzero(read_buffer, BUFFER_SIZE);
-      
+
       // Read from server.
       ssize_t bytes_read = read(client_socket_fd, read_buffer, BUFFER_SIZE);
 
@@ -79,11 +79,11 @@ int main (int argc, char *argv[]) {
 	printf("Server closed\n");
 	break;
       }
-      
+
       printf("Server: %s", read_buffer);
-    } else if (FD_ISSET(fileno(stdin), &read_fds)) {      
+    } else if (FD_ISSET(fileno(stdin), &read_fds)) {
       bzero(write_buffer, BUFFER_SIZE);
-      
+
       // Read from stdin.
       ssize_t bytes_read = read(fileno(stdin), write_buffer, BUFFER_SIZE);
 
@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
 	error("Error reading from user");
       }
       // Write to server.
-      size_t bytes_written = write(client_socket_fd, write_buffer, strlen(write_buffer));
+      ssize_t bytes_written = write(client_socket_fd, write_buffer, strlen(write_buffer));
 
       if (bytes_written != strlen(write_buffer)) {
 	error("Error writing to server");
@@ -100,8 +100,8 @@ int main (int argc, char *argv[]) {
       if (!strcmp(write_buffer, "end\n")) break;
     }
   }
-    
+
   close(client_socket_fd);
-  
+
   return 0;
 }
