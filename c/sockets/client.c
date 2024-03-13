@@ -67,6 +67,7 @@ int main (int argc, char *argv[]) {
       error("Error with select");
     }
 
+    // If the activity was from the socket, then read from the server.
     if (FD_ISSET(client_socket_fd, &read_fds)) {
       bzero(read_buffer, BUFFER_SIZE);
 
@@ -81,7 +82,10 @@ int main (int argc, char *argv[]) {
       }
 
       printf("Server: %s", read_buffer);
-    } else if (FD_ISSET(fileno(stdin), &read_fds)) {
+    }
+
+    // If the activity was from stdin, then read from the user.
+    if (FD_ISSET(fileno(stdin), &read_fds)) {
       bzero(write_buffer, BUFFER_SIZE);
 
       // Read from stdin.
