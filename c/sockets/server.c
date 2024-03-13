@@ -30,7 +30,8 @@ int main (int argc, char *argv[]) {
   }
 
   const int BUFFER_SIZE = 1024;
-  char buffer[BUFFER_SIZE];
+  char read_buffer[BUFFER_SIZE];
+  char write_buffer[BUFFER_SIZE];
 
   const int PORT_NUMBER = atoi(argv[1]);
 
@@ -86,6 +87,9 @@ int main (int argc, char *argv[]) {
     FD_ZERO(&read_fds);
     max_fd = -1;
 
+    // Read from terminal input.
+    FD_SET(fileno(stdin), &read_fds);
+    
     // Only detect incoming connections if there is space in the client array.
     if (num_connections < MAX_CONNECTIONS) {
       FD_SET(server_socket_fd, &read_fds);
@@ -116,6 +120,24 @@ int main (int argc, char *argv[]) {
       error("Error with select");
     }
 
+    // If stdin was one of the active sockets, then handle user input.
+    if (FD_ISSET(fileno(stdin), &read_fds)) {
+      // Write to all clients.
+      ssize_t bytes_read = read(fileno(stdin), write_buffer, BUFFER_SIZE);
+      if (bytes_read < 0) {
+	error("Error reading from user");
+      }
+      
+      for (int i = 0; i < MAX_CONNECTIONS; i++) {
+	if (clients[i].client_fd <= 0) continue;
+
+	ssize_t bytes_written = write(clients[i].client_fd, write_buffer, strlen(write_buffer));
+	if (bytes_written != strlen(write_buffer)) {
+	  error("Error writing to client");
+	}
+      }
+    }
+    
     // If the server socket was one of the active sockets, then handle an incoming connection.
     if (FD_ISSET(server_socket_fd, &read_fds)) {
       struct client_info *client = &clients[num_connections];
@@ -148,7 +170,7 @@ int main (int argc, char *argv[]) {
       num_active--;
     }
 
-    // If there is an action on some other file descriptor besides the server.
+    // If there is an action on some other file descriptor besides the server or stdin.
     if (num_active > 0) {
       for (int i = 0; i < MAX_CONNECTIONS; i++) {
 	if (clients[i].client_fd <= 0) continue;
@@ -156,19 +178,19 @@ int main (int argc, char *argv[]) {
 	if (FD_ISSET(clients[i].client_fd, &read_fds)) {
 	  // If a client sent a message, or closed, then handle it.
 
-	  bzero(buffer, BUFFER_SIZE);
-	  ssize_t bytes_read = read(clients[i].client_fd, buffer, BUFFER_SIZE);
-	  if (bytes_read == 0 || !strcmp(buffer, "end")) {
+	  bzero(read_buffer, BUFFER_SIZE);
+	  ssize_t bytes_read = read(clients[i].client_fd, read_buffer, BUFFER_SIZE);
+	  if (bytes_read == 0 || !strcmp(read_buffer, "end")) {
 	    close(clients[i].client_fd);
 	    clients[i].client_fd = 0;
 	    // TODO: Handle this better.
 	  } else if (bytes_read < 0) {
 	    error("Read error");
 	  } else {
-	    printf("Client: %s", buffer);
+	    printf("Client: %s", read_buffer);
 	    // Send back to the client.
-	    ssize_t bytes_written = write(clients[i].client_fd, buffer, strlen(buffer));
-	    if (bytes_written != strlen(buffer)) {
+	    ssize_t bytes_written = write(clients[i].client_fd, read_buffer, strlen(read_buffer));
+	    if (bytes_written != strlen(read_buffer)) {
 	      error("Write error");
 	    }
 	  }
