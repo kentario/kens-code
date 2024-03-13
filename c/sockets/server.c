@@ -127,6 +127,8 @@ int main (int argc, char *argv[]) {
       if (bytes_read < 0) {
 	error("Error reading from user");
       }
+
+      if (!strcmp(write_buffer, "end\n")) break;
       
       for (int i = 0; i < MAX_CONNECTIONS; i++) {
 	if (clients[i].client_fd <= 0) continue;
