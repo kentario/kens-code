@@ -54,16 +54,14 @@ int main (int argc, char *argv[]) {
 
   fd_set read_fds;
   int num_active;
-  
-  FD_ZERO(&read_fds);
-  FD_SET(client_socket_fd, &read_fds);
-  // 0 is for stdin
-  FD_SET(0, &read_fds);
+
   while (1) {
+    FD_ZERO(&read_fds);
+    FD_SET(client_socket_fd, &read_fds);
+    FD_SET(fileno(stdin), &read_fds);
+    
     // Wait for either the user to input something, or for the server to send a message.
-    printf("waiting for activity\n");
     num_active = select(client_socket_fd + 1, &read_fds, NULL, NULL, NULL);
-    printf("activity found\n");
 
     if ((num_active < 0) && (errno != EINTR)) {
       error("Error with select");
@@ -78,22 +76,22 @@ int main (int argc, char *argv[]) {
       if (bytes_read < 0) {
 	error("Error reading from server");
       } else if (bytes_read == 0) {
-	printf("Server closed");
+	printf("Server closed\n");
 	break;
       }
       
       printf("Server: %s", read_buffer);
-    } else if (FD_ISSET(0, &read_fds)) {      
+    } else if (FD_ISSET(fileno(stdin), &read_fds)) {      
       bzero(write_buffer, BUFFER_SIZE);
       
       // Read from stdin.
-      ssize_t bytes_read = read(0, write_buffer, BUFFER_SIZE);
+      ssize_t bytes_read = read(fileno(stdin), write_buffer, BUFFER_SIZE);
 
       if (bytes_read < 0) {
 	error("Error reading from user");
       }
       // Write to server.
-      ssize_t bytes_written = write(client_socket_fd, write_buffer, strlen(write_buffer));
+      size_t bytes_written = write(client_socket_fd, write_buffer, strlen(write_buffer));
 
       if (bytes_written != strlen(write_buffer)) {
 	error("Error writing to server");
