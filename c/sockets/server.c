@@ -1,13 +1,14 @@
-#include <stdio.h>  
-#include <string.h>   //strlen  
-#include <stdlib.h>  
-#include <errno.h>  
-#include <unistd.h>   //close
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
 
-#include <arpa/inet.h>    //close  
-#include <sys/types.h>  
+#include <arpa/inet.h>
+
+#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
+#include <sys/time.h>
 
 #include <netinet/in.h>
 
@@ -15,6 +16,12 @@ void error (const char *msg) {
   perror(msg);
   exit(1);
 }
+
+struct client_info {
+  int client_fd;
+
+  struct sockaddr_in client_address;
+};
 
 int main (int argc, char *argv[]) {
   if (argc != 2) {
@@ -24,16 +31,16 @@ int main (int argc, char *argv[]) {
 
   const int BUFFER_SIZE = 1024;
   char buffer[BUFFER_SIZE];
-  
+
   const int PORT_NUMBER = atoi(argv[1]);
 
   const int LISTEN_BACKLOG = 10;
-  
+
   // Allow a maximum of 10 connections to the socket.
   const int MAX_CONNECTIONS = 10;
   int num_connections = 0;
-  int client_fds[MAX_CONNECTIONS];
-  bzero(client_fds, sizeof(client_fds));
+  struct client_info clients[MAX_CONNECTIONS];
+  bzero(clients, sizeof(clients));
 
   // Socket creates an endpoint and returns the file descriptor to that opened endpoint.
   // AF_INET means the domain will be IPv4 internect protocalls.
@@ -49,10 +56,10 @@ int main (int argc, char *argv[]) {
   int opt = 1;
 
   // Set the reuseaddr option of the server socket to true.
-  if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) < 0) {   
+  if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) < 0) {
     error("setsockopt");
   }
-  
+
   struct sockaddr_in server_address;
   bzero(&server_address, sizeof(server_address));
 
@@ -85,52 +92,53 @@ int main (int argc, char *argv[]) {
 
       // Find the largest used file descriptor
       max_fd = server_socket_fd;
-    } 
+    }
 
     for (int i = 0; i < MAX_CONNECTIONS; i++) {
       // If the client is active.
-      if (client_fds[i] > 0) {
-	FD_SET(client_fds[i], &read_fds);
+      if (clients[i].client_fd > 0) {
+	FD_SET(clients[i].client_fd, &read_fds);
       }
 
-      if (client_fds[i] > max_fd) max_fd = client_fds[i];
+      if (clients[i].client_fd > max_fd) max_fd = clients[i].client_fd;
     }
 
     if (max_fd < 0) {
       fprintf(stderr, "No file descriptors");
       exit(1);
     }
-    
+
     // Wait indefinitely for something to happen on a file descriptor
     // Select will check every file descriptor up until max_fd.
     num_active = select(max_fd + 1, &read_fds, NULL, NULL, NULL);
-    
+
     if ((num_active < 0) && (errno != EINTR)) {
       error("Error with select");
     }
 
     // If the server socket was one of the active sockets, then handle an incoming connection.
     if (FD_ISSET(server_socket_fd, &read_fds)) {
-      struct sockaddr_in client_address;
-      socklen_t client_address_len = sizeof(client_address);
-  
-      client_fds[num_connections] = accept(server_socket_fd,
-					   (struct sockaddr *) &client_address,
+      struct client_info *client = &clients[num_connections];
+      
+      socklen_t client_address_len = sizeof(client->client_address);
+
+      clients[num_connections].client_fd = accept(server_socket_fd,
+					   (struct sockaddr *) &client->client_address,
 					   &client_address_len);
-  
-      if (client_fds[num_connections] < 0) {
+
+      if (client->client_fd < 0) {
 	error("Accept failure");
       }
-  
+
       // Print out information about the client.
-      printf("New connection on socket %d, ip of client is : %s, client is sending from port: %d\n",
-	     client_fds[num_connections],
-	     inet_ntoa(client_address.sin_addr),
-	     ntohs(client_address.sin_port));
-    
+      printf("New connection on socket %d, ip of client is: %s, client is sending from port: %d\n",
+	     client->client_fd,
+	     inet_ntoa(client->client_address.sin_addr),
+	     ntohs(client->client_address.sin_port));
+
       // Send a greeting message.
       const char *message = "Welcome!\n";
-      ssize_t bytes_written = write(client_fds[num_connections], message, strlen(message));
+      ssize_t bytes_written = write(client->client_fd, message, strlen(message));
 
       if (bytes_written != strlen(message)) {
 	error("Write error");
@@ -143,22 +151,23 @@ int main (int argc, char *argv[]) {
     // If there is an action on some other file descriptor besides the server.
     if (num_active > 0) {
       for (int i = 0; i < MAX_CONNECTIONS; i++) {
-	if (client_fds[i] <= 0) continue;
+	if (clients[i].client_fd <= 0) continue;
 
-	if (FD_ISSET(client_fds[i], &read_fds)) {
+	if (FD_ISSET(clients[i].client_fd, &read_fds)) {
 	  // If a client sent a message, or closed, then handle it.
 
 	  bzero(buffer, BUFFER_SIZE);
-	  ssize_t bytes_read = read(client_fds[i], buffer, BUFFER_SIZE);
+	  ssize_t bytes_read = read(clients[i].client_fd, buffer, BUFFER_SIZE);
 	  if (bytes_read == 0 || !strcmp(buffer, "end")) {
-	    close(client_fds[i]);
-	    client_fds[i] == 0;
+	    close(clients[i].client_fd);
+	    clients[i].client_fd = 0;
 	    // TODO: Handle this better.
 	  } else if (bytes_read < 0) {
 	    error("Read error");
 	  } else {
+	    printf("Client: %s", buffer);
 	    // Send back to the client.
-	    ssize_t bytes_written = write(client_fds[i], buffer, strlen(buffer));
+	    ssize_t bytes_written = write(clients[i].client_fd, buffer, strlen(buffer));
 	    if (bytes_written != strlen(buffer)) {
 	      error("Write error");
 	    }
@@ -167,14 +176,14 @@ int main (int argc, char *argv[]) {
       }
     }
   }
-  
+
   for (int i = 0; i < num_connections; i++) {
-    if (client_fds[i] > 0) {
-      close(client_fds[i]);
+    if (clients[i].client_fd > 0) {
+      close(clients[i].client_fd);
     }
   }
-  
+
   close(server_socket_fd);
-  
+
   return 0;
 }
