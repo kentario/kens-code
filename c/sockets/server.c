@@ -19,7 +19,6 @@ void error (const char *msg) {
 
 struct client_info {
   int client_fd;
-
   struct sockaddr_in client_address;
 };
 
@@ -142,13 +141,28 @@ int main (int argc, char *argv[]) {
     
     // If the server socket was one of the active sockets, then handle an incoming connection.
     if (FD_ISSET(server_socket_fd, &read_fds)) {
-      struct client_info *client = &clients[num_connections];
+      // Find the first open spot.
+
+      int first_open = -1;
+      for (int i = 0; i < MAX_CONNECTIONS; i++) {
+	if (clients[i].client_fd == 0) {
+	  first_open = i;
+	  break;
+	}
+      }
+
+      if (first_open < 0) {
+	// TODO: Think of better way to handle not having enough open spots.
+	continue;
+      }
+      
+      struct client_info *client = &clients[first_open];
       
       socklen_t client_address_len = sizeof(client->client_address);
 
-      clients[num_connections].client_fd = accept(server_socket_fd,
-					   (struct sockaddr *) &client->client_address,
-					   &client_address_len);
+      client->client_fd = accept(server_socket_fd,
+				 (struct sockaddr *) &client->client_address,
+				 &client_address_len);
 
       if (client->client_fd < 0) {
 	error("Accept failure");
@@ -185,7 +199,7 @@ int main (int argc, char *argv[]) {
 	  if (bytes_read == 0 || !strcmp(read_buffer, "end")) {
 	    close(clients[i].client_fd);
 	    clients[i].client_fd = 0;
-	    // TODO: Handle this better.
+	    num_connections--;
 	  } else if (bytes_read < 0) {
 	    error("Read error");
 	  } else {
