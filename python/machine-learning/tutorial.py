@@ -31,7 +31,7 @@ class ff(nn.Module):
         self.biases = []
         for i in range(len(nodes_per_layer)):
             # bias should have same size of current or i - 1
-            bias = nn.Parameter(torch.rand(nodes_per_layer[i - 1]))
+            bias = nn.Parameter(torch.rand(nodes_per_layer[i], 1))
             self.biases.append(bias)
             # skip the first one because nothing leads into it.
             if (i <= 0):
@@ -51,9 +51,10 @@ class ff(nn.Module):
             return None
 
         for i, weight in enumerate(self.weights):
-            x = torch.mm(weight, x)
             x = x + self.biases[i]
-            
+            x = torch.mm(weight, x)
+
+        x = x + self.biases[-1]
         return x
 
 def main ():
