@@ -5,7 +5,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as functional
 
-# A feed forward neural network that has 2 inputs, 1 hidden layer of 3 nodes, and 1 output.
+# A feed forward neural network that has 2 inputs, 1 hidden layer of 2 nodes, and 1 output.
 class learn_logic(nn.Module):
     def __init__ (self):
         super().__init__()
