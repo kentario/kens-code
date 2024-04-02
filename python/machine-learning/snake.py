@@ -175,9 +175,9 @@ class Snake_AI:
     def get_direction (self, game):
         return directions[torch.argmax(self.get_output(game)).item()]
 
-def play_game (game, surface, pixel_size):
+def play_game (game, surface, pixel_size, agent=None):
     clock = pygame.time.Clock()
-    fps = 3
+    fps = 10
     running = True
     while (running):
         turn = None
@@ -186,19 +186,22 @@ def play_game (game, surface, pixel_size):
                 running = False
                 break;
             # Check if the user wants to turn the snake.
-            elif (event.type == pygame.KEYDOWN):
-                if (event.key in [pygame.K_w, pygame.K_UP]):
-                    turn = directions[0]
-                    break
-                elif (event.key in [pygame.K_a, pygame.K_LEFT]):
-                    turn = directions[3]
-                    break
-                elif (event.key in [pygame.K_s, pygame.K_DOWN]):
-                    turn = directions[2]
-                    break
-                elif (event.key in [pygame.K_d, pygame.K_RIGHT]):
-                    turn = directions[1]
-                    break
+            if (agent is None):
+                if (event.type == pygame.KEYDOWN):
+                    if (event.key in [pygame.K_w, pygame.K_UP]):
+                        turn = directions[0]
+                        break
+                    elif (event.key in [pygame.K_a, pygame.K_LEFT]):
+                        turn = directions[3]
+                        break
+                    elif (event.key in [pygame.K_s, pygame.K_DOWN]):
+                        turn = directions[2]
+                        break
+                    elif (event.key in [pygame.K_d, pygame.K_RIGHT]):
+                        turn = directions[1]
+                        break
+            else:
+                turn = agent.get_direction(game)
 
         game.update(turn)
                 
@@ -236,8 +239,6 @@ def main ():
     num_epochs = 1000
 
     snake_ai = Snake_AI()
-
-    print(snake_ai.get_direction(game))
     
     play_game(game, surface, pixel_size)
     
