@@ -1,7 +1,4 @@
-from helper import directions
-from helper import contains
-from helper import remove
-from helper import Rewards
+from helper import directions, contains, remove, Rewards
 
 from collections import deque
 import random
@@ -45,6 +42,7 @@ class Game:
         self.width = width
         self.height = height
         self.num_apples = num_apples
+        self.num_apples_current = num_apples
         self.snake = Snake()
         self.apple_locations = np.empty((num_apples, 2), dtype=int)
         self.num_ticks = 0
@@ -55,12 +53,21 @@ class Game:
         for i in range(num_apples):
             self.apple_locations[i] = self.new_apple_location()
 
+    def reset (self):
+        self.num_apples_current = self.num_apples
+        self.snake = Snake()
+        self.apple_locations = np.empty((num_apples, 2), dtype=int)
+        self.num_ticks = 0
+        
+        for i in range(self.num_apples):
+            self.apple_locations[i] = self.new_apple_location()
+            
     def win (self):
         return self.snake.length >= self.width * self.height
 
     def lose (self):
         # The game is lost if either:
-        # The snake's head is outside the screen.
+        # The snake's head isthe screen.
         return ((self.snake.head[0] < 0 or self.snake.head[0] >= self.width or
                  self.snake.head[1] < 0 or self.snake.head[1] >= self.height) or
         # Or if the snake's head is in its body.
@@ -92,10 +99,10 @@ class Game:
         if (apple_eaten):
             self.apple_locations = remove(self.apple_locations, self.snake.head)
             # If there is no space for a new apple, don't create a new one.
-            if (self.num_apples + self.snake.length > self.width * self.height):
-                self.num_apples -= 1
+            if (self.num_apples_current + self.snake.length > self.width * self.height):
+                self.num_apples_current -= 1
                 # If there are 0 apples, then the game will be won.
-                if (self.num_apples <= 0):
+                if (self.num_apples_current <= 0):
                     return Rewards.WIN
             else:
                 # If there is space for an apple, make one.

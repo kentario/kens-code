@@ -1,5 +1,4 @@
-from helper import directions
-from helper import Rewards
+from helper import directions, Rewards
 
 import torch
 from torch import nn
@@ -18,7 +17,7 @@ class Model(nn.Module):
         x = torch.sigmoid(self.l3(x))
         return x
 
-class Snake_AI:
+class Agent:
     def __init__ (self):
         # Currently it's inputs are:
         # The position of head (2)
@@ -36,31 +35,3 @@ class Snake_AI:
     # Returns a direction (not index of directions) given a game.
     def get_direction (self, game):
         return directions[torch.argmax(self.get_output(game)).item()]
-
-class PPO:
-    def __init__ (self, game):
-        self._init_hyperparameters()
-        
-        self.game = game
-        self.observation_size = game.observation_size
-        self.action_size = game.action_size
-
-        self.actor = Model(observation_size, 256, action_size)
-        self.critic = Model(observation_size, 1)
-
-    def _init_hyperparameters (self):
-        self.steps_per_batch = 4800
-        self.max_steps_per_episode = 1600
-
-    # Collect batch data.
-    def rollout (self):
-        batch_obsservations = []
-        batch_actions = []
-        batch_log_probabilities = []
-        batch_rewards = []
-        batch_rewards_to_go = []
-        batch_episodic_lengths = []
-
-    def learn (self):
-        for t in range(num_epochs):
-            pass

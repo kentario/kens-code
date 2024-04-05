@@ -1,4 +1,5 @@
 from enum import Enum
+from collections import deque
 import numpy as np
 import pygame
 
@@ -20,11 +21,13 @@ def remove (arr, element):
     return np.delete(arr, np.where(np.all(arr == element, axis=1)), axis=0)
 
 def play_game (game, surface, pixel_size, agent=None):
+    input_buffer = deque()
+    
     clock = pygame.time.Clock()
-    fps = 4
+    fps = 5
     running = True
+    turn = None
     while (running):
-        turn = None
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
                 running = False
@@ -33,20 +36,17 @@ def play_game (game, surface, pixel_size, agent=None):
             if (agent is None):
                 if (event.type == pygame.KEYDOWN):
                     if (event.key in [pygame.K_w, pygame.K_UP]):
-                        turn = directions[0]
-                        break
+                        input_buffer.append(directions[0])
                     elif (event.key in [pygame.K_a, pygame.K_LEFT]):
-                        turn = directions[3]
-                        break
+                        input_buffer.append(directions[3])
                     elif (event.key in [pygame.K_s, pygame.K_DOWN]):
-                        turn = directions[2]
-                        break
+                        input_buffer.append(directions[2])
                     elif (event.key in [pygame.K_d, pygame.K_RIGHT]):
-                        turn = directions[1]
-                        break
+                        input_buffer.append(directions[1])
             else:
-                turn = agent.get_direction(game)
-
+                input_buffer.append(agent.get_direction(game))
+                
+        turn = None if len(input_buffer) <= 0 else input_buffer.popleft()
         result = game.update(turn)
 
         if (result is Rewards.WIN):

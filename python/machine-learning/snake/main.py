@@ -1,6 +1,6 @@
-from helper import play_game
-from game import Game
-from learning import Snake_AI
+import helper as h
+import game as g
+import learning as l
 
 import pygame
 
@@ -12,13 +12,13 @@ def main ():
     pixel_size = 40
     surface = pygame.display.set_mode((width * pixel_size, height * pixel_size))
 
-    game = Game(width, height, 1)
+    game = g.Game(width, height, 1)
 
     num_epochs = 1000
 
-    agent = Snake_AI()
+    agent = l.Agent()
     
-    play_game(game, surface, pixel_size)
+    h.play_game(game, surface, pixel_size)
     
     pygame.quit()
 
