@@ -56,7 +56,7 @@ class Game:
     def reset (self):
         self.num_apples_current = self.num_apples
         self.snake = Snake()
-        self.apple_locations = np.empty((num_apples, 2), dtype=int)
+        self.apple_locations = np.empty((self.num_apples, 2), dtype=int)
         self.num_ticks = 0
         
         for i in range(self.num_apples):

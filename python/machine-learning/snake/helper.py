@@ -35,6 +35,8 @@ def play_game (game, surface, pixel_size, agent=None):
             # Check if the user wants to turn the snake.
             if (agent is None):
                 if (event.type == pygame.KEYDOWN):
+                    if (event.key == pygame.K_r):
+                        game.reset()
                     if (event.key in [pygame.K_w, pygame.K_UP]):
                         input_buffer.append(directions[0])
                     elif (event.key in [pygame.K_a, pygame.K_LEFT]):
