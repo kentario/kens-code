@@ -1,4 +1,4 @@
-from helper import directions, contains, remove, Rewards
+from helper import directions, contains, remove, Rewards, clamp
 
 from collections import deque
 import random
@@ -41,16 +41,19 @@ class Game:
     def __init__ (self, width: int, height: int, num_apples: int):
         self.width = width
         self.height = height
-        self.num_apples = num_apples
-        self.num_apples_current = num_apples
-        self.snake = Snake()
-        self.apple_locations = np.empty((num_apples, 2), dtype=int)
+        
         self.num_ticks = 0
-
+        self.snake = Snake()
         self.observation_size = 23
         self.action_size = 4
 
-        for i in range(num_apples):
+        self.num_apples = clamp(num_apples, width * height - self.snake.length, 0)
+        self.num_apples_current = self.num_apples
+        self.apple_locations = np.empty((num_apples, 2), dtype=int)
+        self.all_locations = np.array([(x, y) for x in range(width)
+                                                  for y in range(height)])
+        
+        for i in range(self.num_apples):
             self.apple_locations[i] = self.new_apple_location()
 
     def reset (self):
@@ -74,15 +77,13 @@ class Game:
                 (contains(self.snake.body, self.snake.head)))
 
     def new_apple_location (self):
-        max_tries = 1000
-        for i in range(max_tries):
-            apple_location = np.array([random.randint(0, self.width - 1),
-                                          random.randint(0, self.height - 1)])
+        np.random.shuffle(self.all_locations)
 
-            if (not contains(self.snake.body, apple_location) and
-                not np.array_equal(apple_location, self.snake.head) and
-                not contains(self.apple_locations, apple_location)):
-                return apple_location
+        for location in self.all_locations:
+            if (not contains(self.snake.body, location) and
+                not np.array_equal(location, self.snake.head) and
+                not contains(self.apple_locations, location)):
+                return location
 
         raise ValueError("No valid apple location found")
 

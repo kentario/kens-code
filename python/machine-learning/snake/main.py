@@ -10,9 +10,10 @@ def main ():
     width = 10
     height = 10
     pixel_size = 40
+    num_apples = 10
     surface = pygame.display.set_mode((width * pixel_size, height * pixel_size))
 
-    game = g.Game(width, height, 1)
+    game = g.Game(width, height, num_apples)
 
     num_epochs = 1000
 

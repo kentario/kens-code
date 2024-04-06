@@ -12,6 +12,9 @@ class Rewards(Enum):
 # up, right, down, left, straight.
 directions = ((0, -1), (1, 0), (0, 1), (-1, 0), None)
 
+def clamp (x, max_x, min_x):
+    return max(min_x, min(max_x, x))
+
 # Returns whether numpy array sub is contained in numpy array arr.
 def contains (arr, sub):
     return np.any(np.all(arr == sub, axis=1))
@@ -26,15 +29,17 @@ def draw_game (game, surface, pixel_size, fancy_snake = True):
     surface.fill("black")
     # Draw the snake body.
     for i, body in enumerate(game.snake.body):
-        # Todo: Find way to scale i based on board width and height.
-        i = i if fancy_snake else 0
+        # i * color_scale = 200 when i = game.width * game.height
+        color_scale = 200/(game.width * game.height)
+        # i * border_scale = pixel_size/2 when i = game.width * game.height
+        border_scale = pixel_size/(2 * game.width * game.height)
         rect = pygame.Rect(
             (body[0] * pixel_size, body[1] * pixel_size),
             (pixel_size, pixel_size))
         pygame.draw.rect(surface,
-                         (i*3, 255-i*2, i*3),
+                         (0, 255 - i * color_scale, 0),
                          rect,
-                         border_radius=border_radius+i)
+                         border_radius= int(i * border_scale))
 
     # Draw the snake head.
     head = game.snake.head
