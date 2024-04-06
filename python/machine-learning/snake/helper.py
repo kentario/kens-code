@@ -20,6 +20,41 @@ def contains (arr, sub):
 def remove (arr, element):
     return np.delete(arr, np.where(np.all(arr == element, axis=1)), axis=0)
 
+def draw_game (game, surface, pixel_size, fancy_snake = True):
+    border_radius = int(pixel_size/10)
+    
+    surface.fill("black")
+    # Draw the snake body.
+    for i, body in enumerate(game.snake.body):
+        # Todo: Find way to scale i based on board width and height.
+        i = i if fancy_snake else 0
+        rect = pygame.Rect(
+            (body[0] * pixel_size, body[1] * pixel_size),
+            (pixel_size, pixel_size))
+        pygame.draw.rect(surface,
+                         (i*3, 255-i*2, i*3),
+                         rect,
+                         border_radius=border_radius+i)
+
+    # Draw the snake head.
+    head = game.snake.head
+    pygame.draw.rect(surface,
+                     (255, 165, 0),
+                     pygame.Rect(
+                         (head[0] * pixel_size, head[1] * pixel_size),
+                         (pixel_size, pixel_size)),
+                     border_radius=border_radius)
+    
+    # Draw the apples.
+    for apple in game.apple_locations:
+        rect = pygame.Rect((apple[0] * pixel_size, apple[1] * pixel_size), (pixel_size, pixel_size))
+        pygame.draw.rect(surface,
+                         (255, 0, 0),
+                         rect,
+                         border_radius=border_radius * 2)
+        
+    pygame.display.flip()
+
 def play_game (game, surface, pixel_size, agent=None):
     input_buffer = deque()
     
@@ -58,16 +93,6 @@ def play_game (game, surface, pixel_size, agent=None):
             print("Lose")
             running = False
 
-        surface.fill("black")
-        # Draw the snake
-        for s in np.vstack([game.snake.head, game.snake.body]):
-            rect = pygame.Rect((s[0] * pixel_size, s[1] * pixel_size), (pixel_size, pixel_size))
-            pygame.draw.rect(surface, (0, 255, 0), rect)
-        # Draw the apples.
-        for a in game.apple_locations:
-            rect = pygame.Rect((a[0] * pixel_size, a[1] * pixel_size), (pixel_size, pixel_size))
-            pygame.draw.rect(surface, (255, 0, 0), rect)
-                    
-        pygame.display.flip()
-                    
+        draw_game(game, surface, pixel_size)
+            
         delta = clock.tick(fps)
