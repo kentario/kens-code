@@ -48,6 +48,16 @@ void my_printf (char *fmt, ...) {
   va_end(args);
 }
 
+
+#define VALUE_IF_NOT_(...) __VA_ARGS__
+#define VALUE_IF_NOT_1(...)
+
+#define VALUE_IF_NOT(cond, ...) VALUE_IF_NOT_##cond(__VA_ARGS__)
+
+// This is the opposite of __VA_OPT__(), which will evaluate to the inside if __VA_ARGS__ has elements, and nothing if __VA_ARGS__ is empty.
+// NOT_VA_OPT() will evaluate to "There are no elements" when there are no elements in NOT_VA_OPT
+#define NOT_VA_OPT(...) VALUE_IF_NOT(__VA_OPT__(1), "There are no elements")
+
 int main (int argc, char *argv[]) {
   int a = 3;
   char c = 'h';
