@@ -1,7 +1,10 @@
 from helper import directions, Rewards
 
+import os
 import torch
-from torch import nn
+import torch.optim as optim
+import torch.nn as nn
+import torch.nn.functional as F
 
 class Model(nn.Module):
     def __init__ (self, input_size: int, hidden_sizes: int, output_size: int):
@@ -12,10 +15,31 @@ class Model(nn.Module):
         self.l3 = nn.Linear(hidden_sizes, output_size)
 
     def forward (self, x):
-        x = torch.celu(self.l1(x))
-        x = torch.celu(self.l2(x))
-        x = torch.sigmoid(self.l3(x))
+        x = F.celu(self.l1(x))
+        x = F.celu(self.l2(x))
+        x = F.sigmoid(self.l3(x))
         return x
+
+    # https://pytorch.org/tutorials/beginner/saving_loading_models.html
+    def save (self, file_path):
+        torch.save(self, file_path)
+
+    def load (self, file_path):
+        if (os.path.exists(file_path)):
+            self.load_state_dict(torch.load(file_path))
+        else:
+            raise FileNotFoundError("Model file not found")
+
+        return self
+
+class Trainer:
+    def __init__ (self, model, learn_rate, gamma):
+        self.model = model
+        self.learn_rate = learn_rate
+        self.gamma = gamma
+
+        self.optimizer = optim.adam(model.parameters(), lr=learn_rate)
+        self.loss_f = nn.MSELoss()
 
 class Agent:
     def __init__ (self):
