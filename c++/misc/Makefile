@@ -1,4 +1,4 @@
-build:
+build: count-unique-digits variadic 3d-game compile-time-prime connect-4 draw game-of-life hello-world key-mouse-sdl2 mandelbrot minesweeper neural-network othello pathfinding sdl-hello-world test-osmium tutorial
 
 variadic: variadic.cpp
 	g++ -g $< -o $@ -std=c++20
@@ -13,7 +13,7 @@ connect-4: connect-4.cpp
 	g++ -g $< -o $@ -std=c++20
 
 count-unique-digits: count-unique-digits.cpp
-	g++ -g $< -o $@ -std=c++20
+	g++ -g -O3 $< -o $@ -std=c++20
 
 draw: draw.cpp
 	g++ -g $< -o $@ -std=c++20 -lSDL2
@@ -28,7 +28,7 @@ key-mouse-sdl2: key-mouse-sdl2.cpp
 	g++ -g $< -o $@ -std=c++20 -lSDL2
 
 mandelbrot: mandelbrot.cpp
-	g++ -g $< -o $@ -std=c++20 -lSDL2
+	g++ -g -O3 $< -o $@ -std=c++20 -lSDL2
 
 minesweeper: minesweeper.cpp
 	g++ -g $< -o $@ -std=c++20 -lSDL2
