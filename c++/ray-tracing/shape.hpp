@@ -97,4 +97,10 @@ Vector3 rand_in_hemisphere (const Vector3 &hemisphere_normal, const Vector3 &bou
   return point * (dot(hemisphere_normal, point) < 0 ? -1 : 1);
 }
 
+Vector3 rand_in_hemisphere (const Vector3 &hemisphere_normal) {
+  Vector3 point {rand_in_unit_sphere()};
+  return point * (dot(hemisphere_normal, point) < 0 ? -1 : 1);
+}
+
+
 #endif // __OBJECT_HPP_ not defined
