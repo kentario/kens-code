@@ -17,14 +17,14 @@ class Snake:
         self.directions = deque([directions[1] for _ in range(5)], maxlen=5)
 
     # None can be used to represent no turn.
-    def turn (self, direction):
+    def turn (self, direction: tuple[int, int]) -> None:
         if (direction is None):
             direction = self.directions[-1]
             
         self.directions.append(direction)
 
     # Returns true if an apple was eaten, false if not.
-    def move (self, apples):
+    def move (self, apples: np.array) -> bool:
         self.body = np.vstack([self.head, self.body])
         self.head += self.directions[-1]
 
@@ -56,7 +56,7 @@ class Game:
         for i in range(self.num_apples):
             self.apple_locations[i] = self.new_apple_location()
 
-    def reset (self):
+    def reset (self) -> None:
         self.num_apples_current = self.num_apples
         self.snake = Snake()
         self.apple_locations = np.empty((self.num_apples, 2), dtype=int)
@@ -65,10 +65,10 @@ class Game:
         for i in range(self.num_apples):
             self.apple_locations[i] = self.new_apple_location()
             
-    def win (self):
+    def win (self) -> bool:
         return self.snake.length >= self.width * self.height
 
-    def lose (self):
+    def lose (self) -> bool:
         # The game is lost if either:
         # The snake's head isthe screen.
         return ((self.snake.head[0] < 0 or self.snake.head[0] >= self.width or
@@ -76,7 +76,7 @@ class Game:
         # Or if the snake's head is in its body.
                 (contains(self.snake.body, self.snake.head)))
 
-    def new_apple_location (self):
+    def new_apple_location (self) -> tuple[int, int]:
         np.random.shuffle(self.all_locations)
 
         for location in self.all_locations:
@@ -89,7 +89,7 @@ class Game:
 
     # Returns the reward:
     # -1 for losing, +1 for eating an apple, +10 for winning.
-    def update (self, turn=None):
+    def update (self, turn=None) -> Rewards:
         self.num_ticks += 1
         # Turn the snake.
         self.snake.turn(turn)
@@ -112,7 +112,7 @@ class Game:
 
         return Rewards.LOSE if self.lose() else Rewards.SURVIVE
                 
-    def get_state (self):
+    def get_state (self) -> torch.tensor:
         # 3 is apple, 2 is snake, 1 is wall, 0 is empty.
         surroundings = np.empty(8, dtype=int)
         for i, direction in enumerate([(-1, -1), (0, -1), (1, -1),

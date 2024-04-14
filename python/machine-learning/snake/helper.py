@@ -12,18 +12,18 @@ class Rewards(Enum):
 # up, right, down, left, straight.
 directions = ((0, -1), (1, 0), (0, 1), (-1, 0), None)
 
-def clamp (x, max_x, min_x):
+def clamp (x: int, max_x: int, min_x: int) -> int:
     return max(min_x, min(max_x, x))
 
 # Returns whether numpy array sub is contained in numpy array arr.
-def contains (arr, sub):
+def contains (arr: np.array, sub: np.array) -> bool:
     return np.any(np.all(arr == sub, axis=1))
 
 # Removes a specific 1d numpy array from 2d numpy array arr.
-def remove (arr, element):
+def remove (arr: np.array, element: np.array) -> np.array:
     return np.delete(arr, np.where(np.all(arr == element, axis=1)), axis=0)
 
-def draw_game (game, surface, pixel_size, fancy_snake = True):
+def draw_game (game, surface, pixel_size: int, fancy_snake = True) -> None:
     border_radius = int(pixel_size/10)
     
     surface.fill("black")
@@ -60,7 +60,7 @@ def draw_game (game, surface, pixel_size, fancy_snake = True):
         
     pygame.display.flip()
 
-def play_game (game, surface, pixel_size, agent=None):
+def play_game (game, surface, pixel_size: int, agent=None) -> None:
     input_buffer = deque()
     
     clock = pygame.time.Clock()
