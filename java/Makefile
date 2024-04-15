@@ -1,4 +1,7 @@
-build: EncodeDecode.class HelloWorld.class
+build: EncodeDecode.class HelloWorld.class Variadic.class
+
+Variadic.class: Variadic.java
+	javac $^
 
 HelloWorld.class: HelloWorld.java
 	javac $^
