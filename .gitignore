@@ -1,3 +1,12 @@
-java/*.class
+# Emacs
 *~
+
+# Java
+java/*.class
+
+
+# Python
+__pycache__/
+
+# Images
 *.ppm
