@@ -24,8 +24,6 @@ def main ():
         game.reset()
         state = game.get_state()
 
-        while (not game.lose() and 
-        
     pygame.quit()
 
 if __name__ == "__main__":

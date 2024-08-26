@@ -13,20 +13,16 @@ class Snake:
         self.body = np.array([[0, 0]])
 
         # Default direction to the right
-        # self.directions[-1] is the current direction.
-        self.directions = deque([directions[1] for _ in range(5)], maxlen=5)
+        self.direction = directions[1]
 
     # None can be used to represent no turn.
     def turn (self, direction: tuple[int, int]) -> None:
-        if (direction is None):
-            direction = self.directions[-1]
-            
-        self.directions.append(direction)
+        self.direction = self.direction if direction is None else direction
 
     # Returns true if an apple was eaten, false if not.
     def move (self, apples: np.array) -> bool:
         self.body = np.vstack([self.head, self.body])
-        self.head += self.directions[-1]
+        self.head += self.direction
 
         # Check if the head is in an apple.
         if (contains(apples, self.head)):
@@ -36,6 +32,12 @@ class Snake:
             # Only shorten the body if the head is not in an apple.
             self.body = self.body[:-1]
             return False
+
+    def get_observation (self) -> torch.tensor:
+        state = torch.tensor([
+            self.length,
+            directions[self.head]
+        ], dtype = float)
 
 class Game:
     def __init__ (self, width: int, height: int, num_apples: int):
@@ -111,41 +113,18 @@ class Game:
                 return Rewards.APPLE
 
         return Rewards.LOSE if self.lose() else Rewards.SURVIVE
-                
+
     def get_state (self) -> torch.tensor:
-        # 3 is apple, 2 is snake, 1 is wall, 0 is empty.
-        surroundings = np.empty(8, dtype=int)
-        for i, direction in enumerate([(-1, -1), (0, -1), (1, -1),
-                                       (-1,  0),          (1,  0),
-                                       (-1,  1), (0,  1), (1,  1)]):
-            l = np.array([self.snake.head[0] + direction[0], self.snake.head[1] + direction[1]])
-            if (l[0] < 0 or l[0] >= self.width or l[1] < 0 or l[1] >= self.height):
-                # Wall.
-                surroundings[i] = 1
-            elif (contains(self.snake.body, l)):
-                # Snake.
-                surroundings[i] = 2
-            elif (contains(self.apple_locations, l)):
-                # Apple.
-                surroundings[i] = 3
-            else:
-                # Empty.
-                surroundings[i] = 0
+        state = np.zeros((self.width, self.height), dtype = float)
 
-# for direction in past_directions: For each tuple in the past_directions deque
-#     for coord in direction: for each part of the direction tuple, first x, then y
-#         Add the coordinate
-        directions = [coordinate
-                      for direction in self.snake.directions
-                          for coordinate in direction]
-
-        state = torch.tensor([self.snake.head[0],
-                              self.snake.head[1],
-                              # Past directions
-                              *directions,
-                              self.snake.length,
-                              self.apple_locations[0][0],
-                              self.apple_locations[0][1],
-                              # State of squares around snake head.
-                              *surroundings])
-        return state.float()
+        # 3 is snake head, 2 is snake body, 1 is apple, 0 is empty
+        # All the apples
+        for apple_location in self.apple_locations:
+            state[apple_location[0]][apple_location[1]] = 1
+        # The snake body
+        for body in self.snake.body:
+            state[body[0]][body[1]] = 2
+        # The snake head
+        state[self.snake.head[0]][self.snake.head[1]] = 3
+        
+        return torch.from_numpy(state)
