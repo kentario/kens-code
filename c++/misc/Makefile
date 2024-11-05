@@ -1,4 +1,4 @@
-build: count-unique-digits variadic 3d-game compile-time-prime connect-4 draw game-of-life hello-world key-mouse-sdl2 mandelbrot minesweeper neural-network othello pathfinding sdl-hello-world test-osmium tutorial
+build: count-unique-digits variadic 3d-game compile-time-prime connect-4 draw game-of-life hello-world key-mouse-sdl2 mandelbrot minesweeper neural-network othello pathfinding sdl-hello-world test-osmium tutorial eulers-method
 
 variadic: variadic.cpp
 	g++ -g $< -o $@ -std=c++20
@@ -10,7 +10,7 @@ compile-time-prime: compile-time-prime.cpp
 	g++ -ftemplate-depth=2000 $< -o $@
 
 connect-4: connect-4.cpp
-	g++ -g $< -o $@ -std=c++20
+	g++ -g -O3 $< -o $@ -std=c++20
 
 count-unique-digits: count-unique-digits.cpp
 	g++ -g -O3 $< -o $@ -std=c++20
@@ -52,3 +52,5 @@ test-osmium: test-osmium.cpp
 tutorial: tutorial.cpp
 	g++ -g $< -o $@ -std=c++20
 
+eulers-method: eulers-method.cpp
+	g++ -g $< -o $@ -std=c++20
