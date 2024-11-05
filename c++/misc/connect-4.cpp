@@ -2,16 +2,17 @@
 #include <vector>
 #include <algorithm>
 #include <climits>
+#include <cmath>
 
 using namespace std;
 
+// Helps with making the accesing of the bitboards more readable.
+// white is the max player, black is the min player.
+const int white = 0;
+const int black = 1;
+
 class Board {
 private:
-  // Helps with making the accesing of the bitboards more readable.
-  // white is the max player, black is the min player.
-  const int white = 0;
-  const int black = 1;
-  
   // There are 2 bitboards, one is all of blacks moves, the other is all of whites moves.
   // bitboard[0] is white, bitboard[1] is black.
   unsigned long long bitboards[2] = {0, 0};
@@ -107,6 +108,7 @@ public:
     
     return false;
   }
+  
   int number_of_lines (bool player_black, int length) const {
     int line_count = 0;
     
@@ -228,6 +230,10 @@ public:
       cout << "=";
     }
     cout << "\n";
+  }
+
+  int get_move_count () const {
+    return move_count;
   }
 };
 
@@ -394,21 +400,30 @@ int main () {
   int test2[] = {3, 3, 3, 3, 0, 3, 0, 4, 5, 5, 5, 5, 5, 4, 6, 4, 6, 4, 6, 4, 6};
   
   //  play_moves(my_board, test2, sizeof(test2)/sizeof(test2[0]));
-  
+
+  double depth = 12;
+
   while (1) {
     int input;
+    
     if (my_board.player_is_min()) {
-      input = best_next_move(my_board, 11);
+      input = best_next_move(my_board, static_cast<int>(depth));
     } else {
       cin >> input;
     }
     my_board.do_move(input);
     my_board.print_board();
-    if (my_board.terminal()) {
-      cout << "Game Over\n";
+    if (my_board.win(white)) {
+      std::cout << "White won\n";
+      break;
+    } else if (my_board.win(black)) {
+      std::cout << "Black won\n";
+      break;
+    } else if (my_board.stalemate()) {
+      std::cout << "Stalemate\n";
       break;
     }
   }
-  
+
   return 0;
 }
