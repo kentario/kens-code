@@ -18,18 +18,18 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-client = discord.Client(intents=intents)
+bot = discord.Bot(intents=intents)
 
-@client.event
+@bot.event
 async def on_ready ():
-    print(f'We have logged in as {client.user}')
+    print(f'We have logged in as {bot.user}')
 
 used_words = {}
 
-@client.event
+@bot.event
 async def on_message (message):
     # Ignore messages from the bot itself.
-    if (message.author == client.user):
+    if (message.author == bot.user):
         return
 
     # If any used word has been unused for the WORD_RESET_TIME, it will now be considered unused.
@@ -101,4 +101,4 @@ async def on_message (message):
             "time": message.created_at
             }
 
-client.run(BOT_TOKEN, log_handler=handler)
+bot.run(BOT_TOKEN)
