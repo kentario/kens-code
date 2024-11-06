@@ -43,7 +43,7 @@ async def on_message (message):
         help_message = ""
         help_message += 'List of commands:\n!help Print this help message\n\n'
         if (len(used_words) > 0):
-            help_message += 'List of unusable words:\n\n'
+            help_message += 'List of unusable words:\n'
 
         for word in used_words.keys():
             time_used = used_words[word]["time"]
