@@ -20,47 +20,54 @@ intents.members = True
 
 bot = discord.Bot(intents=intents)
 
-@bot.event
-async def on_ready ():
-    print(f'We have logged in as {bot.user}')
-
 used_words = {}
 
-@bot.event
-async def on_message (message):
-    # Ignore messages from the bot itself.
-    if (message.author == bot.user):
-        return
-
+def update_used_words ():
     # If any used word has been unused for the WORD_RESET_TIME, it will now be considered unused.
     for word in list(used_words.keys()):
         elapsed_time = datetime.datetime.now(datetime.timezone.utc) - used_words[word]["time"]
         time_remaining = WORD_RESET_TIME - elapsed_time
         if (time_remaining.total_seconds() <= 0):
             del used_words[word]
+
+@bot.event
+async def on_ready ():
+    print(f'We have logged in as {bot.user}')
     
-    if (message.content.startswith('!help')):
-        help_message = ""
-        help_message += 'List of commands:\n!help Print this help message\n\n'
-        if (len(used_words) > 0):
-            help_message += 'List of unusable words:\n'
+@bot.slash_command()
+async def help (context):
+    update_used_words()
+    
+    help_message = ""
+    help_message += 'List of commands:\n/help Print this help message\n\n'
+    if (len(used_words) > 0):
+        help_message += 'List of unusable words:\n'
+        
+    for word in used_words.keys():
+        time_used = used_words[word]["time"]
+        elapsed_time = datetime.datetime.now(datetime.timezone.utc) - time_used
+        time_remaining = WORD_RESET_TIME - elapsed_time 
+        total_seconds = int(time_remaining.total_seconds())
+        
+        days = total_seconds // 86400
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        help_message += f'{word} - Used by {used_words[word]["user"].name} at {time_used}. Resets in {days} days, {hours} hours, {minutes} minutes and {seconds} seconds.\n'
+        
+    # TODO: If the message gets too long, send it in chunks.
+    await context.respond(help_message)
+    
+    
+@bot.event
+async def on_message (message):
+    # Ignore messages from the bot itself.
+    if (message.author == bot.user):
+        return
 
-        for word in used_words.keys():
-            time_used = used_words[word]["time"]
-            elapsed_time = datetime.datetime.now(datetime.timezone.utc) - time_used
-            time_remaining = WORD_RESET_TIME - elapsed_time 
-            total_seconds = int(time_remaining.total_seconds())
-            
-            days = total_seconds // 86400
-            hours = (total_seconds % 86400) // 3600
-            minutes = (total_seconds % 3600) // 60
-            seconds = total_seconds % 60
-
-            help_message += f'{word} - Used by {used_words[word]["user"].name} at {time_used}. Resets in {days} days, {hours} hours, {minutes} minutes and {seconds} seconds.\n'
-
-        # If the message gets too long, send it in chunks.
-        await message.channel.send(help_message)
-
+    update_used_words()
+    
     # Make all words lower case so that they are easier to deal with later.
     words = [word.lower() for word in message.content.split()]
 
