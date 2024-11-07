@@ -1,50 +1,66 @@
 from dotenv import load_dotenv
 import os
 
+import sqlite3
+
 import discord
 import logging
 import datetime
 
 load_dotenv()
 
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_ID = 1303195148712153088
 WORD_RESET_TIME = datetime.timedelta(seconds=30)
+
+handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
-
 bot = discord.Bot(intents=intents)
 
-used_words = {}
+# Set up the database connection.
+connection = sqlite3.connect("used_words.db")
+cursor = connection.cursor()
+
+# Create a table if it doesn't exist.
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS used_words (
+        word TEXT PRIMARY KEY,
+        user TEXT,
+        time TEXT
+    )
+""")
+connection.commit()
 
 def update_used_words ():
     # If any used word has been unused for the WORD_RESET_TIME, it will now be considered unused.
-    for word in list(used_words.keys()):
-        elapsed_time = datetime.datetime.now(datetime.timezone.utc) - used_words[word]["time"]
-        time_remaining = WORD_RESET_TIME - elapsed_time
-        if (time_remaining.total_seconds() <= 0):
-            del used_words[word]
-
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cursor.execute("SELECT word, time FROM used_words")
+    for word, time in cursor.fetchall():
+        elapsed_time = now - datetime.datetime.fromisoformat(time)
+        if (elapsed_time >= WORD_RESET_TIME):
+            cursor.execute("DELETE FROM used_words WHERE word = ?", (word,))
+    connection.commit()
+            
 @bot.event
 async def on_ready ():
-    print(f'We have logged in as {bot.user}')
+    print(f"We have logged in as {bot.user}")
     
 @bot.slash_command()
 async def help (context):
     update_used_words()
+    cursor.execute("SELECT word, user, time FROM used_words")
+    words = cursor.fetchall()
     
-    help_message = ""
-    help_message += 'List of commands:\n/help Print this help message\n\n'
-    if (len(used_words) > 0):
-        help_message += 'List of unusable words:\n'
+    help_message = "List of commands:\n/help Print this help message\n\n"
+
+    if (len(words) > 0):
+        help_message += "List of unusable words:\n"
         
-    for word in used_words.keys():
-        time_used = used_words[word]["time"]
+    for word, user, time in words:
+        time_used = datetime.datetime.fromisoformat(time)
         elapsed_time = datetime.datetime.now(datetime.timezone.utc) - time_used
         time_remaining = WORD_RESET_TIME - elapsed_time 
         total_seconds = int(time_remaining.total_seconds())
@@ -54,7 +70,7 @@ async def help (context):
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
         
-        help_message += f'{word} - Used by {used_words[word]["user"].name} at {time_used}. Resets in {days} days, {hours} hours, {minutes} minutes and {seconds} seconds.\n'
+        help_message += f"{word} - Used by {user} at {time_used}. Resets in {days} days, {hours} hours, {minutes} minutes and {seconds} seconds.\n"
         
     # TODO: If the message gets too long, send it in chunks.
     await context.respond(help_message)
@@ -75,7 +91,6 @@ async def on_message (message):
         return
 
     members = message.channel.members
-
     # A valid name is any part of a username or nick, seperated by whitespace.
     valid_names = []
     for member in members:
@@ -86,9 +101,8 @@ async def on_message (message):
 
     # The list of all names that are also in the message.
     names_in_message = set(words) & set(valid_names)
-    # A message must contain at least one name to be valid.
+    # If a message doesn't contain any names, it is assumed not to be a congratulation.
     if (len(names_in_message) < 1):
-        await message.channel.send(f'Invalid message, message {message.content} does not contain any usernames of people in this channel.')
         return
 
     # Remove all names from the message to make it easier to deal with.
@@ -97,15 +111,20 @@ async def on_message (message):
     
     # Check if all the words are valid.
     for word in words:
-       if (word in used_words.keys()):
-           await message.channel.send(f'Invalid message, {word} was already used by {used_words[word]["user"].name} at {used_words[word]["time"]}.')
-           return
+        cursor.execute("SELECT user, time FROM used_words WHERE word = ?", (word,))
+        result = cursor.fetchone()
+        if (result):
+            user, time = result
+            await message.add_reaction("❌")
+            await message.channel.send(f"Invalid message, {word} was already used by {user} at {time}")
+            return
 
     # Add each word to the list of used words.
     for word in words:
-        used_words[word] = {
-            "user": message.author,
-            "time": message.created_at
-            }
+        cursor.execute("INSERT OR REPLACE INTO used_words (word, user, time) VALUES (?, ?, ?)", (word, message.author.name, message.created_at.isoformat()))
+
+    await message.add_reaction("✅")
+
+    connection.commit()
 
 bot.run(BOT_TOKEN)
