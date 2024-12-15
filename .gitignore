@@ -1,8 +1,16 @@
+# Java
 java/*.class
+
+# Emacs
 *~
+
+# Raytracing
 *.ppm
+
+# Python
 .env
 
+# Rust
 debug/
 target/
 Cargo.lock
