@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 
-
 /*
  * FOLDING
  * 1) Unary right fold (E op ...) becomes (E1 op (... op (EN-1 op EN)))
