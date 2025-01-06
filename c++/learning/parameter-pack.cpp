@@ -97,3 +97,7 @@ void func1 (const Args*... args) {
 
 template <typename... Args>
 void func2 (Args* const... args);
+
+int main (int argc, char *argv[]) {
+  return 0;
+}
