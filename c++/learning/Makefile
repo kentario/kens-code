@@ -1,4 +1,10 @@
-build: variadic
+build: fold parameter-pack array
 
-variadic: variadic.cpp
+array: array.cpp
+	g++ -g $< -o $@ -std=c++20
+
+fold: fold.cpp
+	g++ -g $< -o $@ -std=c++20
+
+parameter-pack: parameter-pack.cpp
 	g++ -g $< -o $@ -std=c++20
