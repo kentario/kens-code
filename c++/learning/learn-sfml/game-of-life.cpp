@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <algorithm>
 
 #include <SFML/Graphics.hpp>
 
@@ -75,14 +76,14 @@ int main (int argc, char *argv[]) {
   bool drawing{true};
   // True while the game is playing, false if it is paused.
   bool updating{true};
-  // The delay between updates in milliseconds.
-  std::chrono::duration delay{1s};
+  // The delay between updates in seconds.
+  std::chrono::duration delay{0.1s};
   
   auto last_update = std::chrono::steady_clock::now();
   while (window.isOpen()) {
     // Some keyboard key presses have a meaning.
     window.handleEvents(on_close,
-			[&window, &updating, &drawing, &delay](const sf::Event::KeyPressed &key_press) {
+			[&window, &updating, &drawing, &delay, &cells, width](const sf::Event::KeyPressed &key_press) {
 			  switch (key_press.code) {
 			  case sf::Keyboard::Key::P:
 			    updating = false;
@@ -92,6 +93,23 @@ int main (int argc, char *argv[]) {
 			    break;
 			  case sf::Keyboard::Key::Space:
 			    updating = !updating;
+			    break;
+			  // Speed up and slow down the updating of the game, with a minimum delay of 0.1s.
+			  case sf::Keyboard::Key::Up:
+			    delay += 0.1s;
+			    break;
+			  case sf::Keyboard::Key::Down:
+			    delay = std::max(0.1s, delay - 0.1s);
+			    break;
+			  case sf::Keyboard::Key::Backspace:
+			    drawing = false;
+			    break;
+			  case sf::Keyboard::Key::Enter:
+			    drawing = true;
+			    break;
+			  // Clear the screen.
+			  case sf::Keyboard::Key::Delete:
+			    std::fill(cells.begin(), cells.end(), std::vector<bool>(width, false));
 			    break;
 			  }
 			},
@@ -115,7 +133,6 @@ int main (int argc, char *argv[]) {
     if (elapsed_time >= delay && updating) {
       update_game(cells);
       last_update = std::chrono::steady_clock::now();
-      std::cout << "update\n";
     }
     window.clear(sf::Color::Black);
     
