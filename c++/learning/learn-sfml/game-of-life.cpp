@@ -56,7 +56,7 @@ sf::Vector2i pixel_to_cell (const sf::Vector2i &position, const size_t cell_widt
 
 int main (int argc, char *argv[]) {
   if (argc != 3) {
-    std::cout << "Correct usage: " << argv[0] << " <width> " << "<height>\n";
+    std::cout << "usage: " << argv[0] << " [width] " << "[height]\n";
     return 1;
   }
 
