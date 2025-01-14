@@ -23,7 +23,7 @@ sf::Vector2<size_t> pixel_to_cell (const sf::Vector2<int> &position, const size_
   };
 }
 
-unsigned int count_adjacent (const std::vector<std::vector<bool>> &cells, const sf::Vector2<size_t> &cell) {
+unsigned int count_adjacent2 (const std::vector<std::vector<bool>> &cells, const sf::Vector2<size_t> &cell) {
   unsigned int count{0};
 
   for (int rel_y{-1}; rel_y <= 1; rel_y++) {
@@ -45,13 +45,13 @@ unsigned int count_adjacent (const std::vector<std::vector<bool>> &cells, const 
   return count;
 }
 
-void update_game (std::vector<std::vector<bool>> &cells) {
+void update_game2 (std::vector<std::vector<bool>> &cells) {
   // Writing the new cell statuses to a separate vector so that it doesn't mess with counting the living adjacent cells.
   std::vector<std::vector<bool>> temp(cells.size(), std::vector<bool>(cells[0].size(), false));
 
   for (size_t y{0}; y < cells.size(); y++) {
     for (size_t x{0}; x < cells[0].size(); x++) {
-      const unsigned int adjacent{count_adjacent(cells, {x, y})};
+      const unsigned int adjacent{count_adjacent2(cells, {x, y})};
       // If there are 3 adjacent, then the cell is guaranteed to stay/become alive.
       // A cell that is already alive can stay alive if it has 2 adjacent living cells.
       temp[y][x] = adjacent == 3 || (cells[y][x] && adjacent == 2);
@@ -59,6 +59,53 @@ void update_game (std::vector<std::vector<bool>> &cells) {
   }
 
   cells = std::move(temp);
+}
+
+// Returns a vector where each element corresponds to a cell, and the number is the number of living cells next to that cell.
+std::vector<std::vector<size_t>> count_adjacent (const std::vector<std::vector<bool>> &cells) {
+  std::vector<std::vector<size_t>> num_adjacent(cells.size(), std::vector<size_t>(cells[0].size(), 0));
+
+  for (size_t y{0}; y < cells.size(); y++) {
+    for (size_t x{0}; x < cells[0].size(); x++) {
+      // If the cell is alive, then add 1 to all its adjacent cells.
+      if (cells[y][x]) {
+	for (int rel_y{-1}; rel_y <= 1; rel_y++) {
+	  for (int rel_x{-1}; rel_x <= 1; rel_x++) {
+	    // Skip the current cell.
+	    if (!rel_y && !rel_x) continue;
+
+	    // Converting to size_t makes negative numbers into very big positive numbers which are still seen as invalid by in_screen.
+	    const size_t new_x{x + rel_x};
+	    const size_t new_y{y + rel_y};
+
+	    if (in_screen(cells, {new_x, new_y})) {
+	      num_adjacent[new_y][new_x]++;
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  return num_adjacent;
+}
+
+void update_game (std::vector<std::vector<bool>> &cells) {
+  // The number of living cells adjacent to each cell.
+  std::vector<std::vector<size_t>> num_adjacent {count_adjacent(cells)};
+  // for (const auto &row : num_adjacent) {
+  //   for (const auto &e : row) {
+  //     std::cout << e << " ";
+  //   } std::cout << '\n';
+  // } std::cout << '\n';
+
+  for (size_t y{0}; y < cells.size(); y++) {
+    for (size_t x{0}; x < cells[0].size(); x++) {
+      // If there are 3 adjacent, then the cell is guaranteed to stay/become alive.
+      // A cell that is already alive can stay alive if it has 2 adjacent living cells.
+      cells[y][x] = num_adjacent[y][x] == 3 || (cells[y][x] && num_adjacent[y][x] == 2);
+    }
+  }
 }
 
 int main (int argc, char *argv[]) {
@@ -145,6 +192,7 @@ int main (int argc, char *argv[]) {
     const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_update);
 
     if (elapsed_time >= delay && updating) {
+      //      std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time).count()/1000.0 << '\n';
       update_game(cells);
       last_update = std::chrono::steady_clock::now();
     }
