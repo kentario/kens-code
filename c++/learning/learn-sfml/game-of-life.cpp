@@ -25,7 +25,7 @@ sf::Vector2<size_t> pixel_to_cell (const sf::Vector2<int> &position, const size_
 
 unsigned int count_adjacent (const std::vector<std::vector<bool>> &cells, const sf::Vector2<size_t> &cell) {
   unsigned int count{0};
-  
+
   for (int rel_y{-1}; rel_y <= 1; rel_y++) {
     for (int rel_x{-1}; rel_x <= 1; rel_x++) {
       // Skip the current cell.
@@ -48,7 +48,7 @@ unsigned int count_adjacent (const std::vector<std::vector<bool>> &cells, const 
 void update_game (std::vector<std::vector<bool>> &cells) {
   // Writing the new cell statuses to a separate vector so that it doesn't mess with counting the living adjacent cells.
   std::vector<std::vector<bool>> temp(cells.size(), std::vector<bool>(cells[0].size(), false));
-  
+
   for (size_t y{0}; y < cells.size(); y++) {
     for (size_t x{0}; x < cells[0].size(); x++) {
       const unsigned int adjacent{count_adjacent(cells, {x, y})};
@@ -57,22 +57,22 @@ void update_game (std::vector<std::vector<bool>> &cells) {
       temp[y][x] = adjacent == 3 || (cells[y][x] && adjacent == 2);
     }
   }
-    
+
   cells = std::move(temp);
 }
 
 int main (int argc, char *argv[]) {
-  if (argc != 3) {
-    std::cout << "usage: " << argv[0] << " [width] " << "[height]\n";
+  if (argc != 4) {
+    std::cout << "usage: " << argv[0] << " [width] [height] [cell width]\n";
     return 1;
   }
 
-  const size_t width{std::stoul(argv[1])};
-  const size_t height{std::stoul(argv[2])};
-  constexpr size_t cell_width {100};
-  
+  const size_t width     {std::stoul(argv[1])};
+  const size_t height    {std::stoul(argv[2])};
+  const size_t cell_width{std::stoul(argv[3])};
+
   std::vector<std::vector<bool>> cells(height, std::vector<bool>(width, false));
-  
+
   sf::RenderWindow window{
     sf::VideoMode {{
 	static_cast<unsigned int>(width * cell_width),
@@ -92,7 +92,7 @@ int main (int argc, char *argv[]) {
   bool updating{true};
   // The delay between updates in seconds.
   std::chrono::duration delay{0.1s};
-  
+
   auto last_update = std::chrono::steady_clock::now();
   while (window.isOpen()) {
     // Some keyboard key presses have a meaning.
@@ -108,7 +108,7 @@ int main (int argc, char *argv[]) {
 			  case sf::Keyboard::Key::Space:
 			    updating = !updating;
 			    break;
-			  // Speed up and slow down the updating of the game, with a minimum delay of 0.1s.
+			    // Speed up and slow down the updating of the game, with a minimum delay of 0.1s.
 			  case sf::Keyboard::Key::Up:
 			    delay += 0.1s;
 			    break;
@@ -121,13 +121,13 @@ int main (int argc, char *argv[]) {
 			  case sf::Keyboard::Key::Enter:
 			    drawing = true;
 			    break;
-			  // Clear the screen.
+			    // Clear the screen.
 			  case sf::Keyboard::Key::Delete:
 			    std::fill(cells.begin(), cells.end(), std::vector<bool>(width, false));
 			    break;
 			  }
 			},
-			[&window, &cells, drawing](const sf::Event::MouseMoved &mouse_move) {
+			[&window, &cells, cell_width, drawing](const sf::Event::MouseMoved &mouse_move) {
 			  if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
 			    const sf::Vector2 cell{pixel_to_cell(mouse_move.position, cell_width)};
 			    // Dragging the cursor off the window while holding down a mouse button will result in pixel positions that are not within the window bounds.
@@ -136,7 +136,7 @@ int main (int argc, char *argv[]) {
 			    }
 			  }
 			},
-			[&window, &cells, drawing](const sf::Event::MouseButtonPressed &mouse_press) {
+			[&window, &cells, cell_width, drawing](const sf::Event::MouseButtonPressed &mouse_press) {
 			  const sf::Vector2 cell{pixel_to_cell(mouse_press.position, cell_width)};
 			  cells[cell.y][cell.x] = drawing;
 			});
@@ -154,13 +154,16 @@ int main (int argc, char *argv[]) {
     // Drawing cells.
     for (size_t y{0}; y < cells.size(); y++) {
       for (size_t x{0}; x < cells[0].size(); x++) {
-	sf::RectangleShape cell{{cell_width, cell_width}};
+	sf::RectangleShape cell{{
+	    static_cast<float>(cell_width),
+	    static_cast<float>(cell_width)
+	  }};
 	cell.setPosition({
 	    static_cast<float>(x * cell_width),
 	    static_cast<float>(y * cell_width)
 	  });
 	cell.setFillColor(sf::Color::Black);
-	
+
 	if (cells[y][x]) {
 	  cell.setFillColor(sf::Color::White);
 	} else if (!updating) {
@@ -174,6 +177,6 @@ int main (int argc, char *argv[]) {
     // Displaying cells.
     window.display();
   }
-  
+
   return 0;
 }
