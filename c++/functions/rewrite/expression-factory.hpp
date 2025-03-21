@@ -10,12 +10,12 @@ namespace math_expressions {
     
     /*
       This is a template template paramter.
-      The first section template <typename, typename> typename OPERATOR_TYPE
-      means that this template expects a template for its firt argument.
+      The first section, template <typename, typename> typename OPERATOR_TYPE,
+      means that this template expects a template for its first argument.
       This template that it expects is the OPERATOR_TYPE of the binary operator, and should have 2 typename arguments, in this case the left and right argument types.
 
-      std::vector is a template (template <typename>, int is a typename, std::vector<int> is a typename
-      operators::Addition is a template (template <typename, typename>.
+      std::unordered_map is a template (template <typename, typename>), int is a typename, std::unordered_map<char, int> is a typename
+      operators::Addition is a template (template <typename, typename>).
     */
     /*
       Returns a unique_ptr to a Binary_Operator of the specified type.
