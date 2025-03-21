@@ -1,5 +1,3 @@
-// TODO: Think of a good way to assign a symbol for an operation.
-
 #pragma once
 
 #include <unordered_map>
@@ -10,6 +8,7 @@
 #include <stdexcept>
 #include <utility>
 #include <cmath>
+#include <string_view>
 
 #include "token.hpp"
 
@@ -32,15 +31,16 @@ namespace math_expressions {
   template <Arithmetic N> class Expression;
 
   // Helps with functions that take Expression Pointers as input.
+  /*
+    The type T must:
+    - Have a member alias `OUTPUT_TYPE` that represents the type it evaluates to.
+    - Be a subclass of `Expression<OUTPUT_TYPE>`, i.e., `T` must inherit from `Expression<OUTPUT_TYPE>`.
+  */
   template <typename T>
   concept Derived_From_Expression = requires (T a) {
     typename T::OUTPUT_TYPE;
     std::is_base_of_v<Expression<typename T::OUTPUT_TYPE>, T>;
   };
-
-  // Makes using polymorphism slightly easier to read.
-  template <Arithmetic N>
-  using Expression_Pointer = std::unique_ptr<Expression<N>>;
 
   /*
     Expressions will optionally take a map of variable names to variable values as input.
@@ -52,20 +52,32 @@ namespace math_expressions {
   template <Arithmetic N>
   using var_values = std::unordered_map<char, std::any>;
 
+  // Makes using polymorphism slightly easier to read.
+  template <Arithmetic N>
+  using Expression_Pointer = std::unique_ptr<Expression<N>>;
+
   // Base abstract class for all functions.
   template <Arithmetic N>
   class Expression {
   public:
-    const char symbol;
-    
     using OUTPUT_TYPE = N;
     
     virtual N evaluate (const var_values<N> &values = {}) const = 0;
 
-    virtual std::string get_symbol () const = 0;
-    
-    virtual std::ostream& operator<< (std::ostream &os) const = 0;
+    virtual std::string_view get_symbol () const = 0;
+
+    // Very usefull stuff about inheritance, virtual and friend functions, and overloading https://www.learncpp.com/cpp-tutorial/printing-inherited-classes-using-operator/
+    // This is using the section titled "A more flexible solution."
+    virtual std::ostream& print (std::ostream &os) const = 0;
   };
+
+  template <typename N>
+  std::ostream& operator<<(std::ostream &os, const Expression<N>& expr) {
+    return expr.print(os);
+    
+    return os;
+  }
+
 
   namespace operators {
 
@@ -75,8 +87,6 @@ namespace math_expressions {
     protected:
       Expression_Pointer<N> arg;
     public:
-      const bool is_prefix;
-      
       /*
 	When calling this constructor, the inputs either need to be rvalues, or std::move(lvalue).
 	If std::move(lvalue) is used, the lvalue will be set to nullptr.
@@ -90,13 +100,16 @@ namespace math_expressions {
 
       virtual N operation (const N &input) const = 0;
 
-      std::ostream& operator<< (std::ostream &os) const override {
+      virtual bool is_prefix () const = 0;
+
+      std::ostream& print (std::ostream &os) const override {
 	os << '(';
 
-	if (is_prefix) {
-	  os << Expression<N>::symbol << arg;
+	if (this->is_prefix()) {
+	  // Using a pointer so that polymorphism applies, and there is a different symbol used for different derived classes.
+	  os << this->get_symbol() << *arg;
 	} else {
-	  os << arg << Expression<N>::symbol;
+	  os << *arg << this->get_symbol();
 	}
 	
 	os << ')';
@@ -109,9 +122,15 @@ namespace math_expressions {
     public:
       using Unary_Operator<N>::Unary_Operator;
 
+      std::string_view get_symbol () const override {
+	return std::string_view {"-"};
+      }
+      
       N operation (const N &input) const override {
 	return -input;
       }
+
+      bool is_prefix () const override {return true;}
     };
 
     template <Arithmetic N>
@@ -119,9 +138,15 @@ namespace math_expressions {
     public:
       using Unary_Operator<N>::Unary_Operator;
 
+      std::string_view get_symbol () const override {
+	return std::string_view {"sqrt"};
+      }
+
       N operation (const N &input) const override {
 	return std::sqrt(input);
       }
+
+      bool is_prefix () const override {return true;}
     };
     
     // Abstract class for all binary operations.
@@ -150,8 +175,8 @@ namespace math_expressions {
 
       virtual N operation (const L &a, const R &b) const = 0;
 
-      std::ostream& operator<< (std::ostream &os) const override {
-	os << '(' << left << Expression<N>::symbol << right << ')';
+      std::ostream& print (std::ostream &os) const override {
+	os << '(' << *left << this->get_symbol() << *right << ')';
 
 	return os;
       }
@@ -162,6 +187,10 @@ namespace math_expressions {
     public:
       // Allows the derived class to use the constructor of the base class.
       using Binary_Operator<L, R>::Binary_Operator;
+
+      std::string_view get_symbol () const override {
+	return std::string_view {"+"};
+      }
       
       typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
 	return a + b;
@@ -173,6 +202,10 @@ namespace math_expressions {
     public:
       // Allows the derived class to use the constructor of the base class.
       using Binary_Operator<L, R>::Binary_Operator;
+
+      std::string_view get_symbol () const override {
+	return std::string_view {"-"};
+      }
       
       typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
 	return a - b;
@@ -184,6 +217,10 @@ namespace math_expressions {
     public:
       // Allows the derived class to use the constructor of the base class.
       using Binary_Operator<L, R>::Binary_Operator;
+
+      std::string_view get_symbol () const override {
+	return std::string_view {"*"};
+      }
       
       typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
 	return a * b;
@@ -195,6 +232,10 @@ namespace math_expressions {
     public:
       // Allows the derived class to use the constructor of the base class.
       using Binary_Operator<L, R>::Binary_Operator;
+
+      std::string_view get_symbol () const override {
+	return std::string_view {"/"};
+      }
       
       typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
 	return a / b;
@@ -213,12 +254,22 @@ namespace math_expressions {
       Variable (const char name) :
 	name {name} {}
 
+      std::string_view get_symbol () const override {
+	return std::string_view {&name, 1};
+      }
+
       N evaluate (const var_values<N> &values = {}) const override {
 	if (!values.contains(name)) {
 	  throw std::runtime_error {"Variable '" + std::string {name} + "' not found in input values"};
 	}
 
 	return std::any_cast<N>(values.at(name));
+      }
+
+      std::ostream& print (std::ostream &os) const override {
+	os << name;
+	
+	return os;
       }
     };
 
@@ -230,8 +281,20 @@ namespace math_expressions {
       Number (const N &value) :
 	value {value} {}
 
+      std::string_view get_symbol () const override {
+	//	return std::string_view {std::to_string(value)};
+	return std::string_view {"number"};
+      }
+
       N evaluate (const var_values<N> &values = {}) const override {
+	(void) values;
 	return value;
+      }
+
+      std::ostream& print (std::ostream &os) const override {
+	os << value;
+
+	return os;
       }
     };
     
