@@ -1,7 +1,7 @@
 #pragma once
 
 #include <unordered_map>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <stdexcept>
 
@@ -20,7 +20,7 @@ namespace lexer {
 
   using namespace token;
 
-  const std::unordered_map<std::string, Token_Type> OPERATORS {
+  const std::unordered_map<std::string_view, Token_Type> OPERATORS {
     {"(", Token_Type::OPEN_PARENTHESIS},
     {")", Token_Type::CLOSE_PARENTHESIS},
     {"+", Token_Type::ADDITION},
@@ -33,7 +33,7 @@ namespace lexer {
     Starting at index, for each subsequent digit add it to a single token of type NUMBER.
     Increments i to the last digit/character of the number.
   */
-  Token consume_number (const std::string &input, size_t &i) {
+  Token consume_number (std::string_view input, size_t &i) {
     bool decimal_point_found {false};
 
     std::string value {};
@@ -49,7 +49,7 @@ namespace lexer {
       } else if (input[i] == '.') {
 	// Only one decimal point is allowed, the second one will result in an error.
 	if (decimal_point_found) {
-	  throw std::runtime_error {"Unexpected decimal point at index " + std::to_string(i) + " of input string \"" + input + "\""};
+	  throw std::runtime_error {"Unexpected decimal point at index " + std::to_string(i) + " of input string \"" + std::string {input} + "\""};
 	}
 
 	decimal_point_found = true;
@@ -67,7 +67,7 @@ namespace lexer {
   /*
     Convert a string and an array of possible operations to a vector of tokens.
   */
-  std::vector<Token> tokenize (const std::string &input) {
+  std::vector<Token> tokenize (std::string_view input) {
     std::vector<Token> tokens {};
 
     // Start with something that isn't a number or a variable.
@@ -83,7 +83,7 @@ namespace lexer {
 	  input[i] == '.') {
 	// If the previous token was a variable, then insert a multiplication between them. x3 -> x * 3
 	if (previous == Token_Type::VARIABLE) {
-	  tokens.push_back( Token{OPERATORS.at("*"), '*'} );
+	  tokens.push_back( Token{OPERATORS.at("*"), "*"} );
 	}
 
 	tokens.push_back(consume_number(input, i));
@@ -91,16 +91,16 @@ namespace lexer {
       } else if (std::isalpha(input[i])) {
 	// If the previous token was a number, then insert a multiplication between them. 3x -> 3 * x
 	if (previous == Token_Type::NUMBER) {
-	  tokens.push_back( Token{OPERATORS.at("*"), '*'} );
+	  tokens.push_back( Token{OPERATORS.at("*"), "*"} );
 	}
 
-	tokens.push_back( Token{Token_Type::VARIABLE, input[i]} );
+	tokens.push_back( Token{Token_Type::VARIABLE, input.substr(i, 1)} );
 	previous = Token_Type::VARIABLE;
       } else {
 	// Check if it is an operation.
 	for (const auto &[op_str, op_token] : OPERATORS) {
 	  if (input.substr(i).starts_with(op_str)) {
-	    tokens.push_back( Token{op_token, op_str} );
+	    tokens.push_back( Token{op_token, std::string(op_str)} );
 
 	    // If there was an operation, skip to the last character of the operation, then the for loop will increment to the next character.
 	    i += op_str.size() - 1;
@@ -117,9 +117,9 @@ namespace lexer {
 
   namespace syntax {
     
-    void make_ast (const std::vector<Token> &tokens) {
+    //    void make_ast (const std::vector<Token> &tokens) {
       
-    }
+    //    }
 
   } // namespace syntax
   

@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <array>
-#include <utility>
-#include <string>
+#include <string_view>
 #include <iostream>
 
 namespace token {
@@ -24,23 +23,17 @@ namespace token {
   class Token {
   private:
     const Token_Type type;
-    const std::string value;
+    const std::string_view value;
   public:
-    Token (const Token_Type &type, const std::string &value) :
+    Token (const Token_Type &type, std::string_view value) :
       type {type}, value {value} {}
 
-    Token (const Token_Type &type, const char &value) :
+    Token (const Token_Type &type, const char* value) :
       type {type}, value {value} {}
-
-    Token (const std::pair<Token_Type, std::string> input) :
-      type {input.first}, value {input.second} {}
-
-    Token (const std::pair<Token_Type, char> input) :
-      type {input.first}, value {input.second} {}
 
     Token_Type get_type () const {return type;}
 
-    std::string get_value () const {return value;}
+    std::string_view get_value () const {return value;}
   };
 
   std::ostream& operator<< (std::ostream &os, const Token &token) {
