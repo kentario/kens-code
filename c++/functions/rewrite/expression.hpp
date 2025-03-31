@@ -12,6 +12,49 @@
 
 #include "token.hpp"
 
+/* NAME: name of the operation and class
+   SYMBOL: symbol that represents the operation
+   IS_PREFIX: true or false value of whether the operation comes before or after the aragument
+   OPERATION: brace enclosed block of code with a return statement. Evaluates the result of using this operation on input
+ */
+#define MAKE_UNARY_OPERATOR(NAME, SYMBOL, IS_PREFIX, OPERATION)            \
+  template <Arithmetic N>                                                  \
+  class NAME : public Unary_Operator<N> {                                  \
+  public:                                                                  \
+  /* Allows the derived class to use the constructor of the base class. */ \
+    using Unary_Operator<N>::Unary_Operator;                               \
+                                                                           \
+    std::string_view get_symbol () const override {                        \
+      return std::string_view {#SYMBOL};                                   \
+    }                                                                      \
+                                                                           \
+    bool is_prefix () const override {return IS_PREFIX;}                   \
+                                                                           \
+    N operation (const N &input) const override {                          \
+      OPERATION;                                                           \
+    }                                                                      \
+  };
+
+/* NAME: name of the operation and class
+   SYMBOL: symbol that represents the operation
+   OPERATION: brace enclosed block of code with a return statement. Evaluated the result of using this operation on a and b.
+ */
+#define MAKE_BINARY_OPERATOR(NAME, SYMBOL, OPERATION)                                     \
+  template <Arithmetic L, Arithmetic R>                                                   \
+  class NAME : public Binary_Operator<L, R> {                                             \
+  public:                                                                                 \
+  /* Allows the derived class to use the constructor of the base class. */                \
+    using Binary_Operator<L, R>::Binary_Operator;                                         \
+                                                                                          \
+    std::string_view get_symbol () const override {                                       \
+      return std::string_view {#SYMBOL};                                                  \
+    }                                                                                     \
+                                                                                          \
+    typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override { \
+      OPERATION;                                                                          \
+    }                                                                                     \
+  };
+
 namespace math_expressions {
 
   template <typename T>
@@ -78,7 +121,6 @@ namespace math_expressions {
     return os;
   }
 
-
   namespace operators {
 
     // Abstract class for all unary operations.
@@ -98,9 +140,9 @@ namespace math_expressions {
 	return operation(arg->evaluate(values));
       }
 
-      virtual N operation (const N &input) const = 0;
-
       virtual bool is_prefix () const = 0;
+
+      virtual N operation (const N &input) const = 0;
 
       std::ostream& print (std::ostream &os) const override {
 	os << '(';
@@ -117,37 +159,8 @@ namespace math_expressions {
       }
     };
 
-    template <Arithmetic N>
-    class Negate : public Unary_Operator<N> {
-    public:
-      using Unary_Operator<N>::Unary_Operator;
-
-      std::string_view get_symbol () const override {
-	return std::string_view {"-"};
-      }
-      
-      N operation (const N &input) const override {
-	return -input;
-      }
-
-      bool is_prefix () const override {return true;}
-    };
-
-    template <Arithmetic N>
-    class Square_Root : public Unary_Operator<N> {
-    public:
-      using Unary_Operator<N>::Unary_Operator;
-
-      std::string_view get_symbol () const override {
-	return std::string_view {"sqrt"};
-      }
-
-      N operation (const N &input) const override {
-	return std::sqrt(input);
-      }
-
-      bool is_prefix () const override {return true;}
-    };
+    MAKE_UNARY_OPERATOR(Negate, -, true, {return -input;})
+    MAKE_UNARY_OPERATOR(Square_Root, sqrt, true, {return std::sqrt(input);})
     
     // Abstract class for all binary operations.
     template <Arithmetic L, Arithmetic R>
@@ -181,67 +194,12 @@ namespace math_expressions {
 	return os;
       }
     };
-    
-    template <Arithmetic L, Arithmetic R>
-    class Addition : public Binary_Operator<L, R> {
-    public:
-      // Allows the derived class to use the constructor of the base class.
-      using Binary_Operator<L, R>::Binary_Operator;
 
-      std::string_view get_symbol () const override {
-	return std::string_view {"+"};
-      }
-      
-      typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
-	return a + b;
-      }
-    };
+    MAKE_BINARY_OPERATOR(Addition, +, {return a + b;})
+    MAKE_BINARY_OPERATOR(Subtraction, -, {return a - b;})
+    MAKE_BINARY_OPERATOR(Multiplication, *, {return a * b;})
+    MAKE_BINARY_OPERATOR(Division, /, {return a / b;})
 
-    template <Arithmetic L, Arithmetic R>
-    class Subtraction : public Binary_Operator<L, R> {
-    public:
-      // Allows the derived class to use the constructor of the base class.
-      using Binary_Operator<L, R>::Binary_Operator;
-
-      std::string_view get_symbol () const override {
-	return std::string_view {"-"};
-      }
-      
-      typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
-	return a - b;
-      }
-    };
-
-    template <Arithmetic L, Arithmetic R>
-    class Multiplication : public Binary_Operator<L, R> {
-    public:
-      // Allows the derived class to use the constructor of the base class.
-      using Binary_Operator<L, R>::Binary_Operator;
-
-      std::string_view get_symbol () const override {
-	return std::string_view {"*"};
-      }
-      
-      typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
-	return a * b;
-      }
-    };
-
-    template <Arithmetic L, Arithmetic R>
-    class Division : public Binary_Operator<L, R> {
-    public:
-      // Allows the derived class to use the constructor of the base class.
-      using Binary_Operator<L, R>::Binary_Operator;
-
-      std::string_view get_symbol () const override {
-	return std::string_view {"/"};
-      }
-      
-      typename Binary_Operator<L, R>::N operation (const L &a, const R &b) const override {
-	return a / b;
-      }
-    };
-    
   } // namespace operators
 
   namespace operands {
@@ -282,7 +240,6 @@ namespace math_expressions {
 	value {value} {}
 
       std::string_view get_symbol () const override {
-	//	return std::string_view {std::to_string(value)};
 	return std::string_view {"number"};
       }
 
