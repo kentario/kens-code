@@ -26,22 +26,23 @@ namespace lexer {
     {"+", Token_Type::ADDITION},
     {"-", Token_Type::SUBTRACTION},
     {"*", Token_Type::MULTIPLICATION},
-    {"/", Token_Type::DIVISION}
+    {"/", Token_Type::DIVISION},
+    {"sqrt", Token_Type::SQUARE_ROOT}
   };
 
   /*
-    Starting at index, for each subsequent digit add it to a single token of type NUMBER.
-    Increments i to the last digit/character of the number.
+    Starting at index i, for each subsequent digit add it to a single token of type NUMBER.
+    After returning, i will be at the last digit/character of the number.
   */
   Token consume_number (std::string_view input, size_t &i) {
     bool decimal_point_found {false};
 
-    std::string value {};
+    // The position of the first digit of the number.
+    const size_t start {i};
 
     for (; i < input.size(); i++) {
       if (std::isdigit(input[i])) {
-	value += input[i];
-	// Spaces commas and apostrophes are all ignored
+	// Spaces, commas, and apostrophes are all ignored.
       } else if (std::isspace(input[i]) ||
 		 input[i] == ',' ||
 		 input[i] == '\'') {
@@ -53,57 +54,89 @@ namespace lexer {
 	}
 
 	decimal_point_found = true;
-	value += '.';
       } else {
 	// Something besides a decimal point, comma, apostrophe, digit, or whitespace, signalling something not part of this number.
 	break;
       }
     }
 
-    i--;
-    return Token{Token_Type::NUMBER, value};
+    /*
+      Example for finding the size of a number:
+      0 1 2 3 4 5 6 7 8
+      a b g 9 8 3 d e b
+            ^     ^        6 - 3 = 3
+     */
+    const size_t size {i-- - start};
+    // Decrease i because the loop in the tokenize function will increment i after this functino returns.
+
+    // The length of the number is 
+    return Token {Token_Type::NUMBER, input.substr(start, size)};
   }
 
   /*
-    Convert a string and an array of possible operations to a vector of tokens.
+    Starting at index i, will return a token of the variable at that position.
+    After returning, i will be at the last character of the variable name.
+   */
+  Token consume_variable (std::string_view input, size_t &i) {
+    /*
+       A variable is any single letter, optionally followed by _
+       If a character is followed by _, it, along with any more characters, numbers, or _ after it are included within the variable name.
+     */
+    
+    // Single letter variable. When the next letter doesn't exist, or neither the next nor current letter are underscores.
+    if (i + 1 >= input.size() || (input[i + 1] != '_' && input[i] != '_')) return Token {Token_Type::VARIABLE, input.substr(i, 1)};
+    
+    const size_t start {i};
+
+    while (i < input.size() && (std::isalnum(input[i]) || input[i] == '_')) {
+      i++;
+    }
+
+    const size_t size {i-- - start};
+
+    return Token {Token_Type::VARIABLE, input.substr(start, size)};
+  }
+  
+  /*
+    Convert a string to a vector of tokens.
   */
+  // TODO: Currenty any unrecognized characters will be ignored, instead make an error happen, but have the tokenizing continue so as to catch as many errors as possible.
   std::vector<Token> tokenize (std::string_view input) {
     std::vector<Token> tokens {};
 
-    // Start with something that isn't a number or a variable.
-    Token_Type previous {Token_Type::ADDITION};
-
+    // i is always pointing at the current character being evaluated.
     for (size_t i {0}; i < input.size(); i++) {
-      //    std::cout << i << ": " << input[i] << '\n';
-
       if (std::isspace(input[i])) continue;
 
+      /*
+	== NUMBERS ==
+       */
       if (std::isdigit(input[i]) ||
 	  // Numbers can also start with decimal points.
 	  input[i] == '.') {
-	// If the previous token was a variable, then insert a multiplication between them. x3 -> x * 3
-	if (previous == Token_Type::VARIABLE) {
-	  tokens.push_back( Token{OPERATORS.at("*"), "*"} );
-	}
 
 	tokens.push_back(consume_number(input, i));
-	previous = Token_Type::NUMBER;
-      } else if (std::isalpha(input[i])) {
-	// If the previous token was a number, then insert a multiplication between them. 3x -> 3 * x
-	if (previous == Token_Type::NUMBER) {
-	  tokens.push_back( Token{OPERATORS.at("*"), "*"} );
-	}
 
-	tokens.push_back( Token{Token_Type::VARIABLE, input.substr(i, 1)} );
-	previous = Token_Type::VARIABLE;
+	/*
+	  == VARIABLES ==
+	 */
+      } else if (std::isalpha(input[i]) ||
+		 // Variables can start with '_'
+		 input[i] == '_') {
+	tokens.push_back( consume_variable(input, i));
+
+	/*
+	  == OPERATORS ==
+	 */
       } else {
-	// Check if it is an operation.
+	// Check if the current position is the start of an operation.
 	for (const auto &[op_str, op_token] : OPERATORS) {
 	  if (input.substr(i).starts_with(op_str)) {
-	    tokens.push_back( Token{op_token, std::string(op_str)} );
+	    tokens.push_back( Token {op_token, op_str} );
 
-	    // If there was an operation, skip to the last character of the operation, then the for loop will increment to the next character.
+	    // If there was an operation, skip to the last character of the operation.
 	    i += op_str.size() - 1;
+	    // -1 because the for loop will increment to the next character after it.
 	  
 	    // Don't keep searching for new operations.
 	    break;

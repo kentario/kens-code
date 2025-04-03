@@ -17,28 +17,25 @@ namespace token {
     ADDITION,
     SUBTRACTION,
     MULTIPLICATION,
-    DIVISION
+    DIVISION,
+
+    SQUARE_ROOT
   };
 
-  class Token {
-  private:
+  struct Token {
     const Token_Type type;
     const std::string_view value;
-  public:
-    Token (const Token_Type &type, std::string_view value) :
+
+    Token (const Token_Type &type, const std::string_view value) :
       type {type}, value {value} {}
 
     Token (const Token_Type &type, const char* value) :
       type {type}, value {value} {}
-
-    Token_Type get_type () const {return type;}
-
-    std::string_view get_value () const {return value;}
   };
 
   std::ostream& operator<< (std::ostream &os, const Token &token) {
     std::string type_string {};
-    switch (token.get_type()) {
+    switch (token.type) {
     case Token_Type::NUMBER:
       type_string = "Number";
       break;
@@ -63,9 +60,12 @@ namespace token {
     case Token_Type::CLOSE_PARENTHESIS:
       type_string = "Close Parenthesis";
       break;
+    case Token_Type::SQUARE_ROOT:
+      type_string = "Square Root";
+      break;
     }
 
-    os << '{' << type_string << ", " << token.get_value() << '}';
+    os << '{' << type_string << ", " << token.value << '}';
 
     return os;
   }
