@@ -1,0 +1,12 @@
+expression -> grouping | operand | operator;
+
+grouping -> '(' expression ')';
+
+operand -> number | variable;
+
+operator -> unary | binary;
+  unary -> unary_operator expression;
+    unary_operator -> '-' | "sqrt";
+  
+  binary -> expression binary_operator expression;
+    binary_operator -> ('+' | '-' | '*' | '/');
