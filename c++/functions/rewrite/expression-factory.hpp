@@ -4,7 +4,7 @@
 
 #include "expression.hpp"
 
-namespace math_expressions {
+namespace expression {
 
   namespace factory {
     

@@ -55,7 +55,7 @@
     }                                                                                     \
   };
 
-namespace math_expressions {
+namespace expression {
 
   template <typename T>
   concept Arithmetic = requires (T a) {
