@@ -207,13 +207,13 @@ namespace expression {
     template <Arithmetic N>
     class Variable : public Expression<N> {
     private:
-      const char name;
+      const std::string_view name;
     public:
-      Variable (const char name) :
+      Variable (std::string_view name) :
 	name {name} {}
 
       std::string_view get_symbol () const override {
-	return std::string_view {&name, 1};
+	return name;
       }
 
       N evaluate (const var_values<N> &values = {}) const override {
