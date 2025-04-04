@@ -19,18 +19,23 @@ namespace token {
     MULTIPLICATION,
     DIVISION,
 
-    SQUARE_ROOT
+    SQUARE_ROOT,
+
+    END_OF_FILE
   };
 
   struct Token {
     const Token_Type type;
     const std::string_view value;
-
+    
     Token (const Token_Type &type, const std::string_view value) :
       type {type}, value {value} {}
 
     Token (const Token_Type &type, const char* value) :
       type {type}, value {value} {}
+
+    Token (const Token_Type &type) :
+      type {type}, value {""} {}
   };
 
   std::ostream& operator<< (std::ostream &os, const Token &token) {
@@ -62,6 +67,9 @@ namespace token {
       break;
     case Token_Type::SQUARE_ROOT:
       type_string = "Square Root";
+      break;
+    case Token_Type::END_OF_FILE:
+      type_string = "EOF";
       break;
     }
 

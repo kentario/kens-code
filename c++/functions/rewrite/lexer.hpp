@@ -137,6 +137,7 @@ namespace lexer {
       }
     }
 
+    tokens.push_back( Token {Token_Type::END_OF_FILE} );
     return tokens;
   }
 
