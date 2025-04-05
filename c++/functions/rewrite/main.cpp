@@ -5,34 +5,45 @@
 #include <unordered_map>
 #include <string_view>
 
-#include "expression-factory.hpp"
 #include "token.hpp"
+#include "lexer.hpp"
 #include "parser.hpp"
+#include "expression.hpp"
+#include "expression-factory.hpp"
 
-using namespace math_expressions;
+using namespace expression;
 using namespace factory;
 using namespace operands;
 using namespace operators;
 
-int main (/* int argc, char *argv[] */) {
-  std::string_view input {"(124+ 2)34.432/.2a + a 3,32"};
+int main (int argc, char *argv[]) {
+  if (argc != 2) {
+    std::cout << "Correct usage: " << argv[0] << " <expression>\n";
+    return 1;
+  }
+
+  std::string_view input {argv[1]};
+  //  std::string_view input {"(124+ 2)34 .432/.2a + a _rsine83*()  3,32"}; // currently trying to make unary operators work.
 
   std::cout << "input: " << input << "\n\n";
 
   auto tokens = lexer::tokenize(input);
-
-  /*  for (auto token : tokens) {
+  for (auto token : tokens) {
     std::cout << token << '\n';
-    }*/
-
-  // namespace stuff not needed, just in these examples incase it is too confusing to search through the code for what namespaces shoul be used.
-  auto var_x = std::make_unique<operands::Variable<double>>('x');
-  auto fifteen = std::make_unique<operands::Number<int>>(15);
-  auto var_plus_fifteen = factory::make_binary_operator<operators::Addition>
+  }
+  auto expr = parser::parse(tokens);
+  std::cout << *expr << '\n';
+  std::cout << "evaluate: " << expr->evaluate() << '\n';
+  
+#if 0
+  // namespace stuff not needed, just in these examples in case it is too confusing to search through the code for what namespaces should be used.
+  auto var_x = std::make_unique<expression::operands::Variable<double>>('x');
+  auto fifteen = std::make_unique<expression::operands::Number<int>>(15);
+  auto var_plus_fifteen = factory::make_binary_operator<expression::operators::Addition>
     (
      std::move(var_x), std::move(fifteen)
      );
-  std::cout << var_plus_fifteen->evaluate({{'x', 3.0}}) << '\n';
+  std::cout << var_plus_fifteen->evaluate({{"x", 3.0}}) << '\n';
   std::cout << *var_plus_fifteen << '\n';
 
 
@@ -96,10 +107,10 @@ int main (/* int argc, char *argv[] */) {
      std::move(right)
      );
 
-    std::cout << q_p->evaluate({{'a', 2.8}, {'b', 3.1}, {'c', -0.4}}) << '\n';
+    std::cout << q_p->evaluate({{"a", 2.8}, {"b", 3.1}, {"c", -0.4}}) << '\n';
 
     std::cout << *q_p << '\n';
 
-  
+#endif  
   return 0;
 }

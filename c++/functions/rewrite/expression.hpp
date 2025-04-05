@@ -93,7 +93,7 @@ namespace expression {
     In Variable, it is used return std::any_cast<N>(values.at(name)) to go from std::any to the type of the variable;
   */
   template <Arithmetic N>
-  using var_values = std::unordered_map<char, std::any>;
+  using var_values = std::unordered_map<std::string, std::any>;
 
   // Makes using polymorphism slightly easier to read.
   template <Arithmetic N>
@@ -207,10 +207,13 @@ namespace expression {
     template <Arithmetic N>
     class Variable : public Expression<N> {
     private:
-      const std::string_view name;
+      const std::string name;
     public:
-      Variable (std::string_view name) :
+      Variable (const std::string &name) :
 	name {name} {}
+
+      Variable (const char name) :
+	name(1, name) {}
 
       std::string_view get_symbol () const override {
 	return name;

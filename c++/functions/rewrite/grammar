@@ -1,12 +1,8 @@
-expression -> grouping | operand | operator;
+## Using stuff from here: https://craftinginterpreters.com/parsing-expressions.html
+## Going from lowest to highest precedence
 
-grouping -> '(' expression ')';
-
-operand -> number | variable;
-
-operator -> unary | binary;
-  unary -> unary_operator expression;
-    unary_operator -> '-' | "sqrt";
-  
-  binary -> expression binary_operator expression;
-    binary_operator -> ('+' | '-' | '*' | '/');
+expression -> term;
+term -> factor ( ('+' | '-') factor)*;
+factor -> unary ( ('*' | '/') unary)*;
+unary -> ("sqrt" | '-') unary | primary;
+primary -> NUMBER | VARIABLE | '(' expression ')';
