@@ -221,7 +221,7 @@ namespace expression {
 
       N evaluate (const var_values<N> &values = {}) const override {
 	if (!values.contains(name)) {
-	  throw std::runtime_error {"Variable '" + std::string {name} + "' not found in input values"};
+	  throw std::runtime_error {"Value for variable '" + std::string {name} + "' not found in input values"};
 	}
 
 	return std::any_cast<N>(values.at(name));
