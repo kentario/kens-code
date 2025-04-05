@@ -110,17 +110,10 @@ namespace lexer {
 	tokens.push_back(consume_number(input, i));
 
 	/*
-	  == VARIABLES ==
-	 */
-      } else if (std::isalpha(input[i]) ||
-		 // Variables can start with '_'
-		 input[i] == '_') {
-	tokens.push_back( consume_variable(input, i));
-
-	/*
 	  == OPERATORS ==
 	 */
       } else {
+	bool op_found {false};
 	// Check if the current position is the start of an operation.
 	for (const auto &[op_str, op_token] : OPERATORS) {
 	  if (input.substr(i).starts_with(op_str)) {
@@ -131,8 +124,24 @@ namespace lexer {
 	    // -1 because the for loop will increment to the next character after it.
 	  
 	    // Don't keep searching for new operations.
+	    op_found = true;
 	    break;
 	  }
+	}
+	if (op_found) continue;
+	
+	// If it wasn't an operation, then check if it was a variable:
+	/*
+	  == VARIABLES ==
+	*/
+	if (std::isalpha(input[i]) ||
+	    // Variables can start with '_'
+	    input[i] == '_') {
+	  tokens.push_back( consume_variable(input, i));
+	} else {
+	  // If it is something unknown:
+	  // 	  throw std::runtime_error {"Unexpected decimal point at index " + std::to_string(i) + " of input string \"" + std::string {input} + "\""};
+	  throw std::runtime_error {"Unexpected character at index " + std::to_string(i) + ": '" + std::string(1, input[i]) + "'"};
 	}
       }
     }
