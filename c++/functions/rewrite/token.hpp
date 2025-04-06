@@ -21,6 +21,8 @@ namespace token {
 
     SQUARE_ROOT,
 
+    POWER,
+
     END_OF_FILE
   };
 
@@ -67,6 +69,9 @@ namespace token {
       break;
     case Token_Type::SQUARE_ROOT:
       type_string = "Square Root";
+      break;
+    case Token_Type::POWER:
+      type_string = "Power";
       break;
     case Token_Type::END_OF_FILE:
       type_string = "EOF";

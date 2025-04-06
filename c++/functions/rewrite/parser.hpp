@@ -107,15 +107,28 @@ namespace parser {
     // Otherwise, if there was no unary operator, then the stuff to the right must be even higher precedence, so collapse that stuff.
     return primary<N>(tokens, i);
   }
+
+  template <Arithmetic N>
+  Expression_Pointer<N> power (const std::vector<Token> &tokens, int &i) {
+    auto expr = unary<N>(tokens, i);
+
+    if (match({Token_Type::POWER}, tokens, i)) {
+      // If there is a '^' token, then there is another potential exponent
+      auto right = power<N>(tokens, i);
+      return make_binary_operator<operators::Power>(std::move(expr), std::move(right));
+    }
+
+    return expr;
+  }
   
   template <Arithmetic N>
   Expression_Pointer<N> factor (const std::vector<Token> &tokens, int &i) {
     // Uses the same logic as term.
-    auto expr = unary<N>(tokens, i);
+    auto expr = power<N>(tokens, i);
 
     while (match({Token_Type::MULTIPLICATION, Token_Type::DIVISION}, tokens, i)) {
       Token_Type operation {tokens[i - 1].type};
-      auto right = unary<N>(tokens, i);
+      auto right = power<N>(tokens, i);
       expr = make_binary_operator(operation, std::move(expr), std::move(right));
     }
 

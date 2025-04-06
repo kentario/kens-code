@@ -3,6 +3,7 @@
 
 expression -> term;
 term -> factor ( ('+' | '-') factor)*;
-factor -> unary ( ('*' | '/') unary)*;
+factor -> power ( ('*' | '/') power)*;
+power -> unary ('^' unary)?
 unary -> ("sqrt" | '-') unary | primary;
 primary -> NUMBER | VARIABLE | '(' expression ')';

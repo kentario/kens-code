@@ -195,6 +195,7 @@ namespace expression {
       }
     };
 
+    MAKE_BINARY_OPERATOR(Power, ^, {return std::pow(a, b);})
     MAKE_BINARY_OPERATOR(Addition, +, {return a + b;})
     MAKE_BINARY_OPERATOR(Subtraction, -, {return a - b;})
     MAKE_BINARY_OPERATOR(Multiplication, *, {return a * b;})

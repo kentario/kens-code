@@ -19,7 +19,8 @@ namespace lexer {
     {"-", Token_Type::SUBTRACTION},
     {"*", Token_Type::MULTIPLICATION},
     {"/", Token_Type::DIVISION},
-    {"sqrt", Token_Type::SQUARE_ROOT}
+    {"sqrt", Token_Type::SQUARE_ROOT},
+    {"^", Token_Type::POWER}
   };
 
   /*
