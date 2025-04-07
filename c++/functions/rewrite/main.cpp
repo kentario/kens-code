@@ -23,19 +23,20 @@ int main (int argc, char *argv[]) {
   }
 
   std::string_view input {argv[1]};
-  //  std::string_view input {"(124+ 2)34 .432/.2a + a _rsine83*()  3,32"}; // currently trying to make unary operators work.
 
   std::cout << "input: " << input << "\n\n";
 
   auto tokens = lexer::tokenize(input);
   for (auto token : tokens) {
     std::cout << token << '\n';
-  }
+  } std::cout << '\n';
+  
   auto expr = parser::parse(tokens);
   std::cout << *expr << '\n';
-  std::cout << "evaluate: " << expr->evaluate() << '\n';
+  std::cout << "evaluate: " << expr->evaluate({{"a", -0.8}, {"b", 2.71299}, {"c", -2.3}}) << '\n';
   
-#if 0
+
+  /*
   // namespace stuff not needed, just in these examples in case it is too confusing to search through the code for what namespaces should be used.
   auto var_x = std::make_unique<expression::operands::Variable<double>>('x');
   auto fifteen = std::make_unique<expression::operands::Number<int>>(15);
@@ -90,7 +91,7 @@ int main (int argc, char *argv[]) {
       std::make_unique<Variable<double>>('a')
       )
      );
-
+  */
   /*
                	   (-b + sqrt(b^2 - 4 * a * c))
     q_p(a, b, c) = ----------------------------
@@ -100,7 +101,7 @@ int main (int argc, char *argv[]) {
     q_m(a, b, c) = ----------------------------
                              (2 * a)
   */
-
+  /*
   auto q_p = make_binary_operator<operators::Addition>
     (
      std::move(left),
@@ -110,7 +111,7 @@ int main (int argc, char *argv[]) {
     std::cout << q_p->evaluate({{"a", 2.8}, {"b", 3.1}, {"c", -0.4}}) << '\n';
 
     std::cout << *q_p << '\n';
+  */
 
-#endif  
   return 0;
 }
