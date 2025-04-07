@@ -58,7 +58,7 @@ int main (int argc, char *argv[]) {
     }};
 
   /* This would cause a syntax error:
-     Even though the outermost array uses single brackets, the middle one doesn't.
+     Even though the outermost array uses double brackets, the middle one doesn't.
   multidimensional_array<int, 2, 2, 2> array_2x2x23 = {{
       { {0, 1}, {2, 3} },
       { {4, 5}, {6, 7} }
