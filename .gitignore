@@ -1,14 +1,17 @@
+# Generated Files
+out/
+
 # Java
 java/*.class
 
 # Emacs
 *~
 
-# Raytracing
-*.ppm
-
 # Python
+python/venvs/
+python/*/*.db
 .env
+__pycache__
 
 # Rust
 debug/
