@@ -1,9 +1,12 @@
 #include <iostream>
 
+#include "adder.hpp"
+
 #include <SFML/Graphics.hpp>
 
 int main () {
   std::cout << "Hello CMake!\n";
+  std::cout << "3 + 5 = " << add(3, 5) << '\n';
   sf::RenderWindow window{sf::VideoMode {{200, 200}}, "Hello World", sf::Style::Titlebar | sf::Style::Close};
 
   // Only run the program while the window is open.
