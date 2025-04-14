@@ -6,6 +6,8 @@ java/*.class
 
 # Emacs
 *~
+.cache/
+compile_commands.json
 
 # Python
 python/venvs/
