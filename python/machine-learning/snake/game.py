@@ -13,20 +13,16 @@ class Snake:
         self.body = np.array([[0, 0]])
 
         # Default direction to the right
-        # self.directions[-1] is the current direction.
-        self.directions = deque([directions[1] for _ in range(5)], maxlen=5)
+        self.direction = directions[1]
 
     # None can be used to represent no turn.
-    def turn (self, direction):
-        if (direction is None):
-            direction = self.directions[-1]
-            
-        self.directions.append(direction)
+    def turn (self, direction: tuple[int, int]) -> None:
+        self.direction = self.direction if direction is None else direction
 
     # Returns true if an apple was eaten, false if not.
-    def move (self, apples):
+    def move (self, apples: np.array) -> bool:
         self.body = np.vstack([self.head, self.body])
-        self.head += self.directions[-1]
+        self.head += self.direction
 
         # Check if the head is in an apple.
         if (contains(apples, self.head)):
@@ -36,6 +32,12 @@ class Snake:
             # Only shorten the body if the head is not in an apple.
             self.body = self.body[:-1]
             return False
+
+    def get_observation (self) -> torch.tensor:
+        state = torch.tensor([
+            self.length,
+            directions[self.head]
+        ], dtype = float)
 
 class Game:
     def __init__ (self, width: int, height: int, num_apples: int):
@@ -56,7 +58,7 @@ class Game:
         for i in range(self.num_apples):
             self.apple_locations[i] = self.new_apple_location()
 
-    def reset (self):
+    def reset (self) -> None:
         self.num_apples_current = self.num_apples
         self.snake = Snake()
         self.apple_locations = np.empty((self.num_apples, 2), dtype=int)
@@ -65,10 +67,10 @@ class Game:
         for i in range(self.num_apples):
             self.apple_locations[i] = self.new_apple_location()
             
-    def win (self):
+    def win (self) -> bool:
         return self.snake.length >= self.width * self.height
 
-    def lose (self):
+    def lose (self) -> bool:
         # The game is lost if either:
         # The snake's head isthe screen.
         return ((self.snake.head[0] < 0 or self.snake.head[0] >= self.width or
@@ -76,7 +78,7 @@ class Game:
         # Or if the snake's head is in its body.
                 (contains(self.snake.body, self.snake.head)))
 
-    def new_apple_location (self):
+    def new_apple_location (self) -> tuple[int, int]:
         np.random.shuffle(self.all_locations)
 
         for location in self.all_locations:
@@ -89,7 +91,7 @@ class Game:
 
     # Returns the reward:
     # -1 for losing, +1 for eating an apple, +10 for winning.
-    def update (self, turn=None):
+    def update (self, turn=None) -> Rewards:
         self.num_ticks += 1
         # Turn the snake.
         self.snake.turn(turn)
@@ -111,41 +113,18 @@ class Game:
                 return Rewards.APPLE
 
         return Rewards.LOSE if self.lose() else Rewards.SURVIVE
-                
-    def get_state (self):
-        # 3 is apple, 2 is snake, 1 is wall, 0 is empty.
-        surroundings = np.empty(8, dtype=int)
-        for i, direction in enumerate([(-1, -1), (0, -1), (1, -1),
-                                       (-1,  0),          (1,  0),
-                                       (-1,  1), (0,  1), (1,  1)]):
-            l = np.array([self.snake.head[0] + direction[0], self.snake.head[1] + direction[1]])
-            if (l[0] < 0 or l[0] >= self.width or l[1] < 0 or l[1] >= self.height):
-                # Wall.
-                surroundings[i] = 1
-            elif (contains(self.snake.body, l)):
-                # Snake.
-                surroundings[i] = 2
-            elif (contains(self.apple_locations, l)):
-                # Apple.
-                surroundings[i] = 3
-            else:
-                # Empty.
-                surroundings[i] = 0
 
-# for direction in past_directions: For each tuple in the past_directions deque
-#     for coord in direction: for each part of the direction tuple, first x, then y
-#         Add the coordinate
-        directions = [coordinate
-                      for direction in self.snake.directions
-                          for coordinate in direction]
+    def get_state (self) -> torch.tensor:
+        state = np.zeros((self.width, self.height), dtype = float)
 
-        state = torch.tensor([self.snake.head[0],
-                              self.snake.head[1],
-                              # Past directions
-                              *directions,
-                              self.snake.length,
-                              self.apple_locations[0][0],
-                              self.apple_locations[0][1],
-                              # State of squares around snake head.
-                              *surroundings])
-        return state.float()
+        # 3 is snake head, 2 is snake body, 1 is apple, 0 is empty
+        # All the apples
+        for apple_location in self.apple_locations:
+            state[apple_location[0]][apple_location[1]] = 1
+        # The snake body
+        for body in self.snake.body:
+            state[body[0]][body[1]] = 2
+        # The snake head
+        state[self.snake.head[0]][self.snake.head[1]] = 3
+        
+        return torch.from_numpy(state)

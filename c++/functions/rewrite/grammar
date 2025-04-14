@@ -1,0 +1,9 @@
+## Using stuff from here: https://craftinginterpreters.com/parsing-expressions.html
+## Going from lowest to highest precedence
+
+expression -> term;
+term -> factor ( ('+' | '-') factor)*;
+factor -> power ( ('*' | '/') power)*;
+power -> unary ('^' unary)?
+unary -> ("sqrt" | '-') unary | primary;
+primary -> NUMBER | VARIABLE | '(' expression ')';

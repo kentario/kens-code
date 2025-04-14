@@ -1,3 +1,22 @@
+# Generated Files
+out/
+
+# Java
 java/*.class
+
+# Emacs
 *~
-*.ppm
+.cache/
+compile_commands.json
+
+# Python
+python/venvs/
+python/*/*.db
+.env
+__pycache__
+
+# Rust
+debug/
+target/
+Cargo.lock
+**/*.rs.bk

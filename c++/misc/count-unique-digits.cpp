@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 
-std::vector<long> recursive_count (int n, int digits[], int current_digit, std::vector<long> &total_unique_digits) {
+std::vector<long long> recursive_count (int n, int digits[], int current_digit, std::vector<long long> &total_unique_digits) {
   for (digits[current_digit] = 0; digits[current_digit] < 10; digits[current_digit]++) {
     // If the current digit is the last digit, then start counting the number of unique digits.
     if (current_digit >= n - 1) {
@@ -30,8 +30,8 @@ std::vector<long> recursive_count (int n, int digits[], int current_digit, std::
   return total_unique_digits;
 }
 
-std::vector<long> brute_force_count (int n) {
-  std::vector<long> total_unique_digits(n + 1, 0);
+std::vector<long long> brute_force_count (int n) {
+  std::vector<long long> total_unique_digits(n + 1, 0);
   int digits[n] {};
 
   recursive_count(n, digits, 0, total_unique_digits);

@@ -113,7 +113,7 @@ int main () {
   return 0;
 }
 #endif
-
+/*
 #include <iostream>
 
 #include <osmium/io/xml_input.hpp>
@@ -159,5 +159,10 @@ int main() {
     return EXIT_FAILURE;
   }
   
+  return 0;
+}
+//*/
+
+int main () {
   return 0;
 }

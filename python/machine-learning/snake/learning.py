@@ -1,4 +1,5 @@
 from helper import directions, Rewards
+from game import Game
 
 import os
 import torch
@@ -14,17 +15,18 @@ class Model(nn.Module):
         self.l2 = nn.Linear(hidden_sizes, hidden_sizes)
         self.l3 = nn.Linear(hidden_sizes, output_size)
 
-    def forward (self, x):
+    def forward (self, x) -> torch.tensor:
         x = F.celu(self.l1(x))
         x = F.celu(self.l2(x))
         x = F.sigmoid(self.l3(x))
+        
         return x
 
     # https://pytorch.org/tutorials/beginner/saving_loading_models.html
-    def save (self, file_path):
+    def save (self, file_path: str) -> None:
         torch.save(self, file_path)
 
-    def load (self, file_path):
+    def load (self, file_path: str) -> nn.Module:
         if (os.path.exists(file_path)):
             self.load_state_dict(torch.load(file_path))
         else:
@@ -33,7 +35,7 @@ class Model(nn.Module):
         return self
 
 class Trainer:
-    def __init__ (self, model, learn_rate, gamma):
+    def __init__ (self, model: nn.Module, learn_rate: float, gamma: float):
         self.model = model
         self.learn_rate = learn_rate
         self.gamma = gamma
@@ -53,9 +55,9 @@ class Agent:
         self.model = Model(23, 512, 5)
 
     # Returns the output of the model given a game.
-    def get_output (self, game):
+    def get_output (self, game: Game) -> torch.tensor:
         return self.model(game.get_state())
 
     # Returns a direction (not index of directions) given a game.
-    def get_direction (self, game):
+    def get_direction (self, game: Game) -> tuple[int, int]:
         return directions[torch.argmax(self.get_output(game)).item()]

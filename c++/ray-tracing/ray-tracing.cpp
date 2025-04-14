@@ -11,10 +11,10 @@
 void twod_vector_to_ppm (std::vector<std::vector<Vector3>> &colors, std::string &file_name) {
   int width {static_cast<int>(colors.size())};
   int height {static_cast<int>(colors[0].size())};
-  
+
   std::ofstream my_file;
   my_file.open(file_name);
-  
+
   my_file << "P3\n" << width << " " << height << "\n255\n";
 
   // The top left of the image is [0][0] in the array, and the top right is [width - 1][0].
@@ -37,9 +37,9 @@ void threed_vector_to_ppm (std::vector<std::vector<std::vector<Vector3>>> &pictu
   my_file.open(file_name);
 
   my_file << "P3\n" << width << " " << height << "\n255\n";
-  
+
   Vector3 color;
-  
+
   for (int y {0}; y < width; y++) {
     for (int x {0}; x < height; x++) {
       // Reset color.
@@ -81,7 +81,7 @@ int main () {
   Vector3 plane_origin {0, -40, 0};
   Vector3 plane_normal {0, 1, 0};
   planes.push_back(Plane{plane_material, plane_origin, plane_normal});
-  
+
   // Add a light source far away.
   Vector3 light_shape_color {0, 0, 0};
   double light_shape_reflectivity {0};
@@ -91,7 +91,7 @@ int main () {
   Vector3 light_center {500, 0, 0};
   Vector3 light_normal {-1, 0, 0};
   planes.push_back(Plane{light_material, light_center, light_normal});
-  
+
   std::cout << "Creating discs...\n";
   std::vector<Disc> discs;
 
@@ -101,10 +101,10 @@ int main () {
   Vector3 disc_normal {-1, 0, 1};
   double disc_radius {50};
   discs.push_back(Disc{disc_material, disc_origin, disc_normal, disc_radius});
-  
+
   std::cout << "Combining shapes...\n";
   std::vector<Shape*> shapes;
-  
+
   for (auto &sphere : spheres) {
     shapes.push_back(&sphere);
   }
@@ -128,16 +128,17 @@ int main () {
 
   std::cout << "Taking pictures...\n";
 
-  int num_samples {5};
+  int num_samples {15};
   std::vector<std::vector<std::vector<Vector3>>> pictures(num_samples);
+
   for (int i {0}; i < num_samples; i++) {
     pictures[i] = my_camera.take_picture();
   }
-    
+
   std::string file_name {"num_samples=" + std::to_string(num_samples) + ".ppm"};
-  
+
   std::cout << "Writing to file " + file_name + "...\n";
   threed_vector_to_ppm(pictures, file_name);
-  
+
   return 0;
 }
