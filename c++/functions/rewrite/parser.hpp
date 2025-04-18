@@ -159,13 +159,13 @@ namespace parser {
     return expr;
   }
   
-  template <Arithmetic N = double>
+  template <Arithmetic N>
   Expression_Pointer<N> parse (const std::vector<Token> &tokens, int &i) {
     // Converts the tokens into a term, meaning everything up to + and -.
     return term<N>(tokens, i);
   }
 
-  template <Arithmetic N = double>
+  template <Arithmetic N>
   inline Expression_Pointer<N> parse (const std::vector<Token> &tokens) {
     int i {0};
     return parse(tokens, i);
