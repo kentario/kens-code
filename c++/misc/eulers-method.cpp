@@ -2,7 +2,7 @@
 #include <array>
 
 double dy_dx (const double x, const double y) {
-  return 2 * x + y;
+  return y/80 * (125 - y);
 }
 
 template <size_t NUM_VALUES, double STEP_SIZE>
@@ -23,9 +23,9 @@ std::array<std::array<double, 2>, NUM_VALUES> eulers_method (const std::array<do
 }
 
 int main () {
-  constexpr double step_size {0.5};
+  constexpr double step_size {1};
   constexpr int num_values {3};
-  constexpr std::array<double, 2> initial_values {1, -3};
+  constexpr std::array<double, 2> initial_values {1, 0.04};
 
   for (auto value : eulers_method<num_values, step_size>(initial_values)) {
     std::cout << '(' << value[0] << ", " << value[1] << ")\n";
