@@ -1,4 +1,7 @@
-build: count-unique-digits 3d-game compile-time-prime connect-4 draw game-of-life hello-world key-mouse-sdl2 mandelbrot minesweeper neural-network othello pathfinding sdl-hello-world test-osmium tutorial eulers-method
+build: count-unique-digits 3d-game compile-time-prime connect-4 draw game-of-life hello-world key-mouse-sdl2 mandelbrot minesweeper neural-network othello pathfinding sdl-hello-world test-osmium tutorial eulers-method ultimate-tic-tac-toe
+
+ultimate-tic-tac-toe: ultimate-tic-tac-toe.cpp
+	g++ -g -O3 $< -o $@ -Wall -Wextra -std=c++23
 
 3d-game: 3d-game.cpp
 	g++ -g $< -o $@ -Wall -Wextra -std=c++20 -lSDL2
