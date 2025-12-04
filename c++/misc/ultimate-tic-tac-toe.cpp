@@ -7,7 +7,7 @@ const int X {1};
 const int O {-1};
 
 // Check if someone has won by doing board_winner(state)
-class Board {
+class Board_ {
 private:
   // Left to right, top to bottom.
   // 1 for X, -1 for O.
@@ -112,7 +112,7 @@ public:
   std::array<size_t, 2> get_last_move () const {return last_move;}
 };
 
-std::string print_board_raw (const Board &board) {
+std::string print_board_raw (const Board_ &board) {
   std::string res {};
 
   for (int row {0}; row < 9; row++) {
@@ -144,7 +144,7 @@ std::string print_board_raw (const Board &board) {
 }
 
 
-std::string print_board (const Board &board) {
+std::string print_board (const Board_ &board) {
   std::string res {};
 
   for (int row {0}; row < 9; row++) {
@@ -206,8 +206,36 @@ std::string print_board (const Board &board) {
   return res;
 }
 
+constexpr uint16_t WIN_MASKS [8] {
+  // Horizontal
+  0b111000000,
+  0b000111000,
+  0b000000111,
+  // Vertical
+  0b100100100,
+  0b010010010,
+  0b001001001,
+  // Diagonal
+  0b100010001,
+  0b001001001
+};
+
+struct Board {
+  // For both, [0] => X, [1] => O, and for macroboards, [2] => draw
+  // 9 boards, left to right top to bottom, and 1 for each player.
+  uint16_t subboards[9][2] {};
+  // 1 overall board for each player, stores where a player has won a subboard, and the last board is the ones that have ended in a draw.
+  uint16_t macroboards[3] {};
+
+  // -1 means any subboard is allowed.
+  int forced_sb {-1};
+};
+
+void make_move (Board board, const size_t subboard, const size_t square) {
+}
+
 int main () {
-  Board board {};
+  Board_ board {};
 
   // Sample game against a randomly playing oponent.
   const std::vector<std::array<int, 2>> moves {
