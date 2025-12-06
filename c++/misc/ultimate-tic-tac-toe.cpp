@@ -3,6 +3,10 @@
 #include <array>
 #include <string>
 #include <random>
+#include <functional>
+#include <limits>
+#include <bit>
+#include <algorithm>
 
 std::string to_string (std::array<std::array<int, 9>, 9> board, std::array<int, 9> state) {
   std::string res {};
@@ -112,7 +116,10 @@ struct Board {
   // 9 means any subboard is allowed.
   size_t forced_sb {9};
 
+  // false/0 for X to play, true/1 for O to play
+  // This aligns with indexing of subboards and macroboards, as 0 means the X board and 1 means the O board.
   bool next_player {0};
+  size_t moves_played {0};
 };
 
 bool is_legal (const Board board, const Move move) {
@@ -124,10 +131,26 @@ bool is_legal (const Board board, const Move move) {
     && ((board.subboards[move.subboard][0] | board.subboards[move.subboard][1]) & MOVE_MASKS[move.square]) == 0;
 }
 
+bool terminal (const Board board) {
+  // Check if there is a win.
+  for (const auto mask : WIN_MASKS) {
+    for (size_t player {0}; player < 2; player++) {
+      // Check for a 3 in a row overall.
+      if ((mask & board.macroboards[player]) == mask) return true;
+    }
+  }
+
+  // Check for a draw.
+  // Happens if the board is full.
+  if ((board.macroboards[0] | board.macroboards[1] | board.macroboards[2]) == FULL_BOARD) return true;
+
+  return false;
+}
+
 // Updates the state of a subboard stored in the macroboard after a certain move is played.
 void update_subboard_state (Board &board, const size_t subboard) {
   for (const auto mask : WIN_MASKS) {
-    for (int player {0}; player < 2; player++) {
+    for (size_t player {0}; player < 2; player++) {
       // Win detected if everything under the mask is a 1, or in other words all squares required for a win are taken.
       if ((mask & board.subboards[subboard][player]) == mask) {
 	board.macroboards[player] |= MOVE_MASKS[subboard];
@@ -154,7 +177,17 @@ void play_move_unsafe (Board &board, const Move move) {
   
   // Update the person playing next.
   board.next_player = !board.next_player;
+  board.moves_played++;
 }
+
+Board play_move_unsafe_value (const Board board, const Move move) {
+  Board res {board};
+
+  play_move_unsafe(res, move);
+
+  return res;
+}
+
 
 bool play_move (Board &board, const Move move) {
   if (is_legal(board, move)) {
@@ -184,8 +217,8 @@ std::string to_string (const Board &board) {
 }
 
 // Returns a vector of all legal moves.
-std::vector<std::array<size_t, 2>> legal_moves (const Board board) {
-  std::vector<std::array<size_t, 2>> moves {};
+std::vector<Move> legal_moves (const Board board) {
+  std::vector<Move> moves {};
 
   if (board.forced_sb < 9) {
     // All empty squares in the specific subboard.
@@ -217,15 +250,140 @@ std::vector<std::array<size_t, 2>> legal_moves (const Board board) {
 class Bot {
 public:
   // Returns the move that it wants to play
-  virtual std::array<int, 2> operator() (Board board) = 0;
+  virtual Move operator() (const Board board) = 0;
 };
 
 class Random : public Bot {
+protected:
+  std::mt19937 rng;
 public:
-  std::array<int, 2> operator() (Board board) {
-    
+  // Template forwarding constructor.
+  // Takes any arguments that mt19937 can take in its constructor, and forwards them to it.
+  template<typename... Types>
+  Random (Types&&... args)
+    : rng {std::forward<Types>(args)...} {}
+  
+  Move operator() (const Board board) {
+    std::vector<Move> moves {legal_moves(board)};
+    std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
+    return moves[dist(rng)];
   }
 };
+
+// For later on if I get confused.
+// https://www.learncpp.com/cpp-tutorial/function-pointers/
+using Heuristic = std::function<int(Board)>;
+
+class Minimax : public Bot {
+protected:
+  const size_t max_depth;
+  Heuristic eval;
+public:
+  Minimax () = delete;
+  
+  Minimax (size_t max_depth, Heuristic eval) :
+    max_depth {max_depth}, eval {eval} {}
+  
+  int minimax (Board board, size_t depth, int alpha, int beta) {
+    if (terminal(board) || depth <= 0) return eval(board);
+
+    const bool maximizing {board.next_player};
+    
+    // If it is the min player's turn, then they will try to minimize the evaluation of the board.
+    // X is trying to minimize, O is trying to maximize.
+    int value;
+    if (!maximizing) {
+      // X's turn
+      // Trying to minimize, so start with the biggest possible value and find better and better eevaluations.
+      value = std::numeric_limits<int>::max();
+      for (const auto &move : legal_moves(board)) {
+	value = std::min(value, minimax(play_move_unsafe_value(board, move), depth - 1, alpha, beta));
+	beta = std::min(value, beta);
+	if (beta <= alpha) break;
+      }
+    } else {
+      // O's turn
+      value = std::numeric_limits<int>::min();
+      for (const auto &move : legal_moves(board)) {
+	value = std::max(value, minimax(play_move_unsafe_value(board, move), depth - 1, alpha, beta));
+	alpha = std::max(value, alpha);
+	if (beta <= alpha) break;
+      }
+    }
+
+    return value;
+  }
+  
+  Move operator() (const Board board) {
+    bool maximizing {board.next_player};
+    
+    auto moves = legal_moves(board);
+    // Index and value of the best move.
+    // If the current player is X, they are trying to minimize, so start with the biggest possible value.
+    // Vice versa for O.
+    std::array<int, 2> best_move {-1, maximizing ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    for (size_t i {0}; i < moves.size(); i++) {
+      int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
+
+      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
+      
+      // If the current player wants to maximize, they want value to be higher than the best found so far.
+      if ((maximizing && value > best_move[1]) ||
+	  (!maximizing && value < best_move[1]))
+	best_move = {static_cast<int>(i), value};
+    }
+
+    return moves[best_move[0]];
+  }
+};
+
+// Same as minimax, except instead of playing the first best move it sees, randomly picks from the best moves.
+class Minimax_random : public Minimax {
+protected:
+  std::mt19937 rng;
+public:
+  
+  template <typename... Types>
+  Minimax_random (size_t max_depth, Heuristic eval, Types&&... args) :
+    Minimax {max_depth, eval}, rng {std::forward<Types>(args)...} {}
+  
+  Move operator() (const Board board) {
+    bool maximizing {board.next_player};
+    
+    auto moves = legal_moves(board);
+    // Shuffle the moves beforehand so that if there is a tie, the best one is picked randomly.
+    std::shuffle(moves.begin(), moves.end(), rng);
+    
+    // Index and value of the best move.
+    // If the current player is X, they are trying to minimize, so start with the biggest possible value.
+    // Vice versa for O.
+    std::array<int, 2> best_move {-1, maximizing ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    for (size_t i {0}; i < moves.size(); i++) {
+      int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
+
+      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
+      
+      // If the current player wants to maximize, they want value to be higher than the best found so far.
+      if ((maximizing && value > best_move[1]) ||
+	  (!maximizing && value < best_move[1]))
+	best_move = {static_cast<int>(i), value};
+    }
+
+    return moves[best_move[0]];
+  }
+};
+
+int heur1 (const Board board) {
+  // Check if there is a win
+  for (const auto mask : WIN_MASKS) {
+    // Player 0 (X) is minimizing.
+    if ((mask & board.macroboards[0]) == mask) return -10000;
+    if ((mask & board.macroboards[1]) == mask) return  10000;
+  }
+
+  // If max wins a board, +1, if min wins a board, -1.
+  return std::popcount(board.macroboards[1]) - std::popcount(board.macroboards[0]);
+}
 
 int main () {
   // Sample game against a randomly playing oponent.
@@ -234,11 +392,36 @@ int main () {
   };
   
   Board board {};
-  for (const auto &move : moves) {
-    if (!play_move(board, move)) std::cout << "failed\n";
-  }
+  Random random {std::random_device{}()};
+  Minimax minimax2 {2, heur1};
+  Minimax minimax3 {3, heur1};
+  Minimax minimax4 {4, heur1};
+  Minimax_random mr2 {2, heur1};
+  Minimax_random mr3 {3, heur1};
+  Minimax_random mr4 {4, heur1};
 
-  std::cout << to_string(board) << '\n';
+
+  std::cout << to_string(board) << "\n\n";
+
+  Move move {};
+  while (!terminal(board)) {
+    std::cout << "moves played " << board.moves_played << '\n';
+
+    if (board.next_player) {
+      move = mr2(board);
+      std::cout << "mr2 (maximizing) playing " << move.subboard << ' ' << move.square << '\n';
+    } else {
+      move = mr3(board);
+      std::cout << "mr3 (minimizing) playing " << move.subboard << ' ' << move.square << '\n';
+    }
+    
+    if (!play_move(board, move)) {
+      std::cout << "Something has gone horribly wrong with trying to play the move " << move.subboard << ' ' << move.square << '\n';
+      break;
+    }
+
+    std::cout << to_string(board) << "\n\n\n";
+  }
 
   return 0;
 }
