@@ -49,12 +49,10 @@ public:
   int minimax (Board board, size_t depth, int alpha, int beta) {
     if (terminal(board) || depth <= 0) return eval(board);
 
-    const bool maximizing {board.next_player};
-    
     // If it is the min player's turn, then they will try to minimize the evaluation of the board.
     // X is trying to minimize, O is trying to maximize.
     int value;
-    if (!maximizing) {
+    if (board.next_player == MIN) {
       // X's turn
       // Trying to minimize, so start with the biggest possible value and find better and better eevaluations.
       value = std::numeric_limits<int>::max();
@@ -77,21 +75,19 @@ public:
   }
   
   Move operator() (const Board board) {
-    bool maximizing {board.next_player};
-    
     auto moves = legal_moves(board);
     // Index and value of the best move.
     // If the current player is X, they are trying to minimize, so start with the biggest possible value.
     // Vice versa for O.
-    std::array<int, 2> best_move {-1, maximizing ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    std::array<int, 2> best_move {-1, board.next_player == MAX ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
     for (size_t i {0}; i < moves.size(); i++) {
       int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
 
       std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
       
       // If the current player wants to maximize, they want value to be higher than the best found so far.
-      if ((maximizing && value > best_move[1]) ||
-	  (!maximizing && value < best_move[1]))
+      if ((board.next_player == MAX && value > best_move[1]) ||
+	  (board.next_player == MIN && value < best_move[1]))
 	best_move = {static_cast<int>(i), value};
     }
 
@@ -110,8 +106,6 @@ public:
     Minimax {max_depth, eval}, rng {std::forward<Types>(args)...} {}
   
   Move operator() (const Board board) {
-    bool maximizing {board.next_player};
-    
     auto moves = legal_moves(board);
     // Shuffle the moves beforehand so that if there is a tie, the best one is picked randomly.
     std::shuffle(moves.begin(), moves.end(), rng);
@@ -119,15 +113,15 @@ public:
     // Index and value of the best move.
     // If the current player is X, they are trying to minimize, so start with the biggest possible value.
     // Vice versa for O.
-    std::array<int, 2> best_move {-1, maximizing ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    std::array<int, 2> best_move {-1, board.next_player == MAX ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
     for (size_t i {0}; i < moves.size(); i++) {
       int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
 
       std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
       
       // If the current player wants to maximize, they want value to be higher than the best found so far.
-      if ((maximizing && value > best_move[1]) ||
-	  (!maximizing && value < best_move[1]))
+      if ((board.next_player == MAX && value > best_move[1]) ||
+	  (board.next_player == MIN && value < best_move[1]))
 	best_move = {static_cast<int>(i), value};
     }
 
@@ -139,10 +133,10 @@ int heur1 (const Board board) {
   // Check if there is a win
   for (const auto mask : WIN_MASKS) {
     // Player 0 (X) is minimizing.
-    if ((mask & board.macroboards[0]) == mask) return -10000;
-    if ((mask & board.macroboards[1]) == mask) return  10000;
+    if ((mask & board.macroboards[X]) == mask) return -10000;
+    if ((mask & board.macroboards[O]) == mask) return  10000;
   }
 
   // If max wins a board, +1, if min wins a board, -1.
-  return std::popcount(board.macroboards[1]) - std::popcount(board.macroboards[0]);
+  return std::popcount(board.macroboards[O]) - std::popcount(board.macroboards[X]);
 }

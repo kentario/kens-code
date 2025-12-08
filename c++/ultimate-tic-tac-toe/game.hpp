@@ -40,9 +40,13 @@ struct Move {
   size_t square {};
 };
 
+constexpr bool X {false};
+constexpr bool MIN {false};
+constexpr bool O {true};
+constexpr bool MAX {true};
+
 std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';
-								 
 }
 
 struct Board {
@@ -58,7 +62,8 @@ struct Board {
 
   // false/0 for X to play, true/1 for O to play
   // This aligns with indexing of subboards and macroboards, as 0 means the X board and 1 means the O board.
-  bool next_player {0};
+  bool next_player {X};
+  // This is temporary.
   size_t moves_played {0};
 };
 
@@ -68,7 +73,7 @@ bool is_legal (const Board board, const Move move) {
     // And on the correct subboard
     && (board.forced_sb == 9 || move.subboard == board.forced_sb)
     // And the square is empty
-    && ((board.subboards[move.subboard][0] | board.subboards[move.subboard][1]) & MOVE_MASKS[move.square]) == 0;
+    && ((board.subboards[move.subboard][X] | board.subboards[move.subboard][O]) & MOVE_MASKS[move.square]) == 0;
 }
 
 bool terminal (const Board board) {
@@ -82,7 +87,7 @@ bool terminal (const Board board) {
 
   // Check for a draw.
   // Happens if the board is full.
-  if ((board.macroboards[0] | board.macroboards[1] | board.macroboards[2]) == FULL_BOARD) return true;
+  if ((board.macroboards[X] | board.macroboards[O] | board.macroboards[2]) == FULL_BOARD) return true;
 
   return false;
 }
@@ -102,7 +107,7 @@ void update_subboard_state (Board &board, const size_t subboard) {
   // No wins detected on the subboard.
   // Check for a draw.
   // Draw occurs when all squares of a subboard have been taken.
-  if ((board.subboards[subboard][0] | board.subboards[subboard][1]) == FULL_BOARD) board.macroboards[2] |= MOVE_MASKS[subboard];
+  if ((board.subboards[subboard][X] | board.subboards[subboard][O]) == FULL_BOARD) board.macroboards[2] |= MOVE_MASKS[subboard];
 }
 
 void play_move_unsafe (Board &board, const Move move) {
@@ -112,7 +117,7 @@ void play_move_unsafe (Board &board, const Move move) {
   update_subboard_state(board, move.subboard);
   // If the board played on is completed, the next move can be anywhere.
   // Otherwise it has to be on subboard corresponding to the square played on.
-  if ((board.macroboards[0] | board.macroboards[1] | board.macroboards[2]) & MOVE_MASKS[move.square]) board.forced_sb = 9;
+  if ((board.macroboards[X] | board.macroboards[O] | board.macroboards[2]) & MOVE_MASKS[move.square]) board.forced_sb = 9;
   else board.forced_sb = move.square;
   
   // Update the person playing next.
@@ -145,7 +150,7 @@ std::vector<Move> legal_moves (const Board board) {
   if (board.forced_sb < 9) {
     // All empty squares in the specific subboard.
     // uint16_t | uint16_t => int.
-    uint16_t subboard {static_cast<uint16_t>(board.subboards[board.forced_sb][0] | board.subboards[board.forced_sb][1])};
+    uint16_t subboard {static_cast<uint16_t>(board.subboards[board.forced_sb][X] | board.subboards[board.forced_sb][O])};
 
     // For each square, check if its empty,
     for (size_t s {0}; s < 9; s++) {
@@ -157,8 +162,8 @@ std::vector<Move> legal_moves (const Board board) {
     // Same as previous, but repeated for all subboards.
     for (size_t b {0}; b < 9; b++) {
       // If the board has been completed, skip it.
-      if ((board.macroboards[0] | board.macroboards[1] | board.macroboards[2]) & MOVE_MASKS[b]) continue;
-      uint16_t subboard {static_cast<uint16_t>(board.subboards[b][0] | board.subboards[b][1])};
+      if ((board.macroboards[X] | board.macroboards[O] | board.macroboards[2]) & MOVE_MASKS[b]) continue;
+      uint16_t subboard {static_cast<uint16_t>(board.subboards[b][X] | board.subboards[b][O])};
       
       for (size_t s {0}; s < 9; s++) {
 	if (!(subboard & MOVE_MASKS[s])) moves.push_back({b, s});
