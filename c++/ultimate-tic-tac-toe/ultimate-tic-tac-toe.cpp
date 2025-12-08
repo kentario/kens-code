@@ -1,24 +1,52 @@
 #include <iostream>
+#include <vector>
 #include <array>
 #include <random>
+#include <memory>
 
 #include "game.hpp"
 #include "bots.hpp"
 
+struct Game_info {
+  std::vector<Move> moves;
+  bool winner;
+};
+
+struct Match_Info {
+  
+};
+
+template <typename T>
+concept Bot_T = requires {
+  std::is_base_of_v<Bot, T>;
+};
+
+using Bot_Pointer = std::unique_ptr<Bot>;
+
+template <Bot_T A, Bot_T B>
+// Each round consists of a game where A goes first, then B goes first, using the same random seed/starting position.
+// The number of games played is 2 * num_rounds.
+Match_Info match (const size_t num_rounds) {
+  Match_Info res {};
+
+  for (int i {0}; i < num_rounds; i++) {
+    
+  }
+  
+  return res;
+}
+
 int main () {
-  // Sample game against a randomly playing oponent.
-  const std::array<Move, 45> moves {{
-    {0, 0}, {0, 3}, {3, 2}, {2, 7}, {7, 4}, {4, 4}, {4, 1}, {1, 1}, {1, 0}, {0, 1}, {1, 3}, {3, 1}, {1, 6}, {6, 6}, {6, 1}, {6, 5}, {5, 1}, {3, 5}, {5, 8}, {8, 0}, {0, 4}, {4, 7}, {7, 2}, {2, 8}, {8, 8}, {8, 2}, {2, 6}, {6, 8}, {8, 1}, {4, 0}, {0, 8}, {8, 5}, {5, 7}, {7, 5}, {5, 6}, {6, 7}, {7, 7}, {7, 3}, {3, 4}, {4, 8}, {8, 3}, {3, 6}, {2, 2}, {2, 0}, {2, 4}
-    }};
+  std::mt19937 rng {};
   
   Board board {};
-  Random random {std::random_device{}()};
-  Minimax minimax2 {2, heur1};
-  Minimax minimax3 {3, heur1};
+  Random random {rng};
+  Minimax minimax1 {1, heur1};
   Minimax minimax4 {4, heur1};
-  Minimax_random mr2 {2, heur1};
-  Minimax_random mr3 {3, heur1};
+  Minimax minimax5 {5, heur1};
   Minimax_random mr4 {4, heur1};
+  Minimax_random mr6 {6, heur1, rng};
+  Minimax_random mr9 {9, heur1, rng};
 
 
   std::cout << board << "\n\n";
@@ -28,12 +56,17 @@ int main () {
     std::cout << "moves played " << board.moves_played << '\n';
 
     if (board.next_player) {
-      move = mr2(board);
-      std::cout << "mr2 (maximizing) playing " << move << '\n';
+      move = mr9(board);
+      std::cout << "mr9 (maximizing) playing " << move << '\n';
     } else {
-      move = mr3(board);
-      std::cout << "mr3 (minimizing) playing " << move << '\n';
+      move = minimax5(board);
+      std::cout << "minimax5 (minimizing) playing " << move << '\n';
     }
+
+    // if (board.moves_played == 42) {
+    //   move = {7, 8};
+    //   std::cout << "overriding bot, playing " << move << '\n';
+    // }
     
     if (!play_move(board, move)) {
       std::cout << "Something has gone horribly wrong with trying to play the move " << move << '\n';
@@ -42,6 +75,8 @@ int main () {
 
     std::cout << board << "\n\n\n";
   }
+
+  std::cout << heur1(board) << '\n';
 
   return 0;
 }
