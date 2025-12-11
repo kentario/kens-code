@@ -1,56 +1,100 @@
 #include <iostream>
 #include <vector>
-#include <array>
+#include <map>
 #include <random>
-#include <memory>
+#include <utility>
 
 #include "game.hpp"
 #include "bots.hpp"
 
-struct Game_info {
-  std::vector<Move> moves;
-  bool winner;
+enum class Game_Result {
+  PLAYER0_WIN,
+  PLAYER1_WIN,
+  DRAW
 };
 
-struct Match_Info {
+struct Game_Record {
+  std::string p0_name {};
+  std::string p1_name {};
   
+  uint64_t seed {};
+  std::vector<Move> moves {};
+  Game_Result result {};
 };
 
-template <typename T>
-concept Bot_T = requires {
-  std::is_base_of_v<Bot, T>;
-};
+// The player/bot going first is always the same in a match.
+// p0 goes first and p1 goes second.
+struct Match_Stats {
+  std::string p0_name {};
+  std::string p1_name {};
 
-using Bot_Pointer = std::unique_ptr<Bot>;
+  size_t num_games {0};
+  size_t p0_wins {0};
+  size_t p1_wins {0};
+  size_t draws {0};
 
-template <Bot_T A, Bot_T B>
-// Each round consists of a game where A goes first, then B goes first, using the same random seed/starting position.
-// The number of games played is 2 * num_rounds.
-Match_Info match (const size_t num_rounds) {
-  Match_Info res {};
+  Match_Stats& add_game (const Game_Record &game) {
+    num_games++;
+    switch (result) {
+    case PLAYER0_WIN:
+      p0_wins++;
+      break;
+    case PLAYER1_WIN:
+      p1_wins++;
+      break;
+    case DRAW:
+      draws++;
+      break;
+    }
 
-  for (int i {0}; i < num_rounds; i++) {
-    
+    return *this;
   }
+
+  Match_Stats& operator+= (const Game_Record &game) { return add_game(game); }
   
-  return res;
-}
+  double p0_win_rate () const { return static_cast<double>(p0_wins)/num_games; }
+  double p1_win_rate () const { return static_cast<double>(p1_wins)/num_games; }
+  double draw_rate () const { return static_cast<double>(draws)/num_games; }
+};
+
+struct Tournament {
+  std::vector<Game_Record> games {};
+
+  // (p0, p1) => Match_Stats
+  std::unordered_map<std::pair<std::string, std::string>, Match_Stats> stats {};
+
+  Tournament& add_game (const Game_Record &game) {
+    // If the match entry doesn't exist, then a default one will be automatically constructed.
+    stats[{game.p0_name, p1_name}] += game;
+    games.push_back(game);
+  }
+
+  Tournament& operator+= (const Game_Record &game) { return add_game(game); }
+};
 
 int main () {
   std::mt19937 rng {};
   
-  Board board {};
+  //  Board board {};
   Random random {rng};
   Minimax minimax1 {1, heur1};
   Minimax minimax4 {4, heur1};
   Minimax minimax5 {5, heur1};
-  Minimax_random mr4 {4, heur1};
-  Minimax_random mr6 {6, heur1, rng};
-  Minimax_random mr9 {9, heur1, rng};
+  Minimax_Random mr4 {4, heur1};
+  Minimax_Random mr6 {6, heur1, rng};
+  Minimax_Random mr9 {9, heur1, rng};
 
-
+  std::cout << "Same bots\n";
+  std::cout << match(std::make_unique<Minimax_Random>(5, heur1, rng),
+		     std::make_unique<Minimax_Random>(5, heur1, rng),
+		     1000);
+  std::cout << "Same b using heur2\n";
+  std::cout << match(std::make_unique<Minimax_Random>(5, heur1, rng),
+		     std::make_unique<Minimax_Random>(5, heur2, rng),
+		     1000);
+  
+  /*
   std::cout << board << "\n\n";
-
   Move move {};
   while (!terminal(board)) {
     std::cout << "moves played " << board.moves_played << '\n';
@@ -75,8 +119,7 @@ int main () {
 
     std::cout << board << "\n\n\n";
   }
-
-  std::cout << heur1(board) << '\n';
+  */
 
   return 0;
 }

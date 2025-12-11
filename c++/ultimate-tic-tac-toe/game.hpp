@@ -35,15 +35,15 @@ constexpr uint16_t FULL_BOARD {
   0b111111111
 };
 
-struct Move {
-  size_t subboard {};
-  size_t square {};
-};
-
 constexpr bool X {false};
 constexpr bool MIN {false};
 constexpr bool O {true};
 constexpr bool MAX {true};
+
+struct Move {
+  size_t subboard {};
+  size_t square {};
+};
 
 std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';

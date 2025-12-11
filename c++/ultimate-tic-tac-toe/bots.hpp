@@ -6,6 +6,7 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <memory>
 
 #include "game.hpp"
 
@@ -14,6 +15,13 @@ public:
   // Returns the move that it wants to play
   virtual Move operator() (const Board board) = 0;
 };
+
+template <typename T>
+concept Bot_T = requires {
+  std::is_base_of_v<Bot, T>;
+};
+
+using Bot_Pointer = std::unique_ptr<Bot>;
 
 class Random : public Bot {
 protected:
@@ -96,13 +104,13 @@ public:
 };
 
 // Same as minimax, except instead of playing the first best move it sees, randomly picks from the best moves.
-class Minimax_random : public Minimax {
+class Minimax_Random : public Minimax {
 protected:
   std::mt19937 rng;
 public:
   
   template <typename... Types>
-  Minimax_random (size_t max_depth, Heuristic eval, Types&&... args) :
+  Minimax_Random (size_t max_depth, Heuristic eval, Types&&... args) :
     Minimax {max_depth, eval}, rng {std::forward<Types>(args)...} {}
   
   Move operator() (const Board board) {
@@ -117,7 +125,7 @@ public:
     for (size_t i {0}; i < moves.size(); i++) {
       int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
 
-      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
+      //      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
       
       // If the current player wants to maximize, they want value to be higher than the best found so far.
       if ((board.next_player == MAX && value > best_move[1]) ||
@@ -133,10 +141,39 @@ int heur1 (const Board board) {
   // Check if there is a win
   for (const auto mask : WIN_MASKS) {
     // Player 0 (X) is minimizing.
-    if ((mask & board.macroboards[X]) == mask) return -10000;
-    if ((mask & board.macroboards[O]) == mask) return  10000;
+    if ((mask & board.macroboards[MIN]) == mask) return -10000;
+    if ((mask & board.macroboards[MAX]) == mask) return  10000;
   }
 
   // If max wins a board, +1, if min wins a board, -1.
-  return std::popcount(board.macroboards[O]) - std::popcount(board.macroboards[X]);
+  return std::popcount(board.macroboards[MAX]) - std::popcount(board.macroboards[MIN]);
+}
+
+int heur2 (const Board board) {
+  for (const auto mask : WIN_MASKS) {
+    if ((mask & board.macroboards[MIN]) == mask) return -10000;
+    if ((mask & board.macroboards[MAX]) == mask) return  10000;
+  }
+
+  // Middle = 6 points, corner = 5 points, edge = 4 points.
+  return
+    (board.macroboards[MAX] & MOVE_MASKS[4] ? 6 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[0] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[2] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[6] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[8] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[1] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[3] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[5] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[7] ? 4 : 0) -
+    
+    (board.macroboards[MIN] & MOVE_MASKS[4] ? 6 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[0] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[2] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[6] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[8] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[1] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[3] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[5] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[7] ? 4 : 0);
 }
