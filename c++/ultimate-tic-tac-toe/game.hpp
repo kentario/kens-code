@@ -45,6 +45,10 @@ struct Move {
   size_t square {};
 };
 
+std::string to_string (const Move move) {
+  return std::to_string(move.subboard) + " " + std::to_string(move.square);
+}
+
 std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';
 }
