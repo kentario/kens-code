@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <tuple>
 #include <exception>
 #include <functional>
 
@@ -25,7 +26,25 @@ struct Game_Record {
   GAME_RESULT result {};
 };
 
-Game_Record play_game (const Bot_Pointer p0, const Bot_Pointer p1, const uint64_t seed) {
+std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
+  os << game.p0_name << " vs " << game.p1_name << '\n';
+  os << "seed: " << game.seed << '\n';
+  switch (game.result) {
+  case GAME_RESULT::PLAYER0_WIN:
+    os << "p0 won";
+    break;
+  case GAME_RESULT::PLAYER1_WIN:
+    os << "p1 won";
+    break;
+  case GAME_RESULT::DRAW:
+    os << "draw";
+    break;
+  }
+
+  return os;
+}
+
+Game_Record play_game (Bot *const p0, Bot *const p1, const uint64_t seed) {
   Game_Record game {p0->get_name(), p1->get_name(), seed};
 
   p0->set_seed(seed);
@@ -33,10 +52,11 @@ Game_Record play_game (const Bot_Pointer p0, const Bot_Pointer p1, const uint64_
 	       
   Board board {};
   Move move {};
+
   while (!terminal(board)) {
     if (board.next_player == X) move = (*p0)(board);
     else move = (*p1)(board);
-
+    
     if (!play_move(board, move)) {
       const std::string msg {
 	to_string(move) +
@@ -51,8 +71,22 @@ Game_Record play_game (const Bot_Pointer p0, const Bot_Pointer p1, const uint64_
       
       throw std::domain_error {msg};
     }
+
+    game.moves.push_back(move);
   }
 
+  switch (heur1(board)) {
+  case -10000:
+    game.result = GAME_RESULT::PLAYER0_WIN;
+    break;
+  case 10000:
+    game.result = GAME_RESULT::PLAYER1_WIN;
+    break;
+  default:
+    // Since the game is over (terminal(board) == false), then it must be a draw.
+    game.result = GAME_RESULT::DRAW;
+  };
+  
   return game;
 }
 
@@ -92,6 +126,15 @@ struct Match_Stats {
   double p1_win_rate () const { return static_cast<double>(p1_wins)/num_games; }
   double draw_rate () const { return static_cast<double>(draws)/num_games; }
 };
+
+std::ostream& operator<< (std::ostream& os, const Match_Stats &match) {
+  os << "num games: " << match.num_games << '\n';
+  os << match.p0_name << " win rate: " << match.p0_win_rate() << '\n';
+  os << match.p1_name << " win rate: " << match.p1_win_rate() << '\n';
+  os << "draw rate: " << match.draw_rate();
+
+  return os;
+}
 
 // For Hashing with a pair of strings.
 // https://stackoverflow.com/questions/32685540/why-cant-i-compile-an-unordered-map-with-a-pair-as-key
@@ -133,10 +176,12 @@ struct Tournament {
   }
 };
 
+/*template <Bot_T... Bs>
 Tournament simulate () {
   Tournament tournament {};
 
+  std::tuple
 
-  
   return tournament;
 }
+*/
