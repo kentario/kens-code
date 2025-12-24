@@ -107,7 +107,7 @@ class Minimax : public Bot {
 protected:
   std::mt19937 rng {};
 public:
-  // Auto generates name.
+  // Automatically generates name.
   // M for minimax, number for max depth, then the name of the heuristic.
   Minimax () :
     Bot {"M" + std::to_string(max_depth) + Heuristic::name} {}

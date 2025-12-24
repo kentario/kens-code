@@ -7,6 +7,7 @@
 #include <tuple>
 #include <exception>
 #include <functional>
+#include <algorithm>
 
 #include "game.hpp"
 #include "bots.hpp"
@@ -44,26 +45,33 @@ std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   return os;
 }
 
-Game_Record play_game (Bot *const p0, Bot *const p1, const uint64_t seed) {
-  Game_Record game {p0->get_name(), p1->get_name(), seed};
+template <Bot_T A, Bot_T B>
+Game_Record play_game (A &p0, B &p1, const uint64_t seed) {
+  Game_Record game {p0.get_name(), p1.get_name(), seed};
+  // If they are the same name, then label them a and b.
+  if (game.p0_name == game.p1_name) {
+    game.p0_name += "_a";
+    game.p1_name += "_b";
+  }
 
-  p0->set_seed(seed);
-  p1->set_seed(seed);
+  p0.set_seed(seed);
+  p1.set_seed(seed);
 	       
   Board board {};
   Move move {};
 
   while (!terminal(board)) {
-    if (board.next_player == X) move = (*p0)(board);
-    else move = (*p1)(board);
+    if (board.next_player == X) move = p0(board);
+    else move = p1(board);
     
     if (!play_move(board, move)) {
       const std::string msg {
+	"Illegal move " +
 	to_string(move) +
 	" played by " +
 	(board.next_player == X ?
-	 (p0->get_name() + " against " + p1->get_name()) :
-	 (p1->get_name() + " against " + p0->get_name())) +
+	 (p0.get_name() + " against " + p1.get_name()) :
+	 (p1.get_name() + " against " + p0.get_name())) +
 	" on board\n" +
 	to_string(board) +
 	"\n"
@@ -75,7 +83,7 @@ Game_Record play_game (Bot *const p0, Bot *const p1, const uint64_t seed) {
     game.moves.push_back(move);
   }
 
-  switch (heur1(board)) {
+  switch (Heur1::eval(board)) {
   case -10000:
     game.result = GAME_RESULT::PLAYER0_WIN;
     break;
@@ -129,9 +137,9 @@ struct Match_Stats {
 
 std::ostream& operator<< (std::ostream& os, const Match_Stats &match) {
   os << "num games: " << match.num_games << '\n';
-  os << match.p0_name << " win rate: " << match.p0_win_rate() << '\n';
-  os << match.p1_name << " win rate: " << match.p1_win_rate() << '\n';
-  os << "draw rate: " << match.draw_rate();
+  os << match.p0_name << " win rate: " << match.p0_win_rate() << " (" << match.p0_wins << ")\n";
+  os << match.p1_name << " win rate: " << match.p1_win_rate() << " (" << match.p1_wins << ")\n";
+  os << "draw rate: " << match.draw_rate() << " (" << match.draws << ')';
 
   return os;
 }
@@ -160,13 +168,15 @@ struct Pair_Hash {
 };
 
 struct Tournament {
+  // TODO: remove vector games, make match stats have a pointer to each game played in the match.
   std::vector<Game_Record> games {};
 
   // (p0, p1) => Match_Stats
-  std::unordered_map<std::pair<std::string, std::string>,
-		     Match_Stats,
-		     Pair_Hash> stats;
-
+  std::unordered_map<
+    std::pair<std::string, std::string>,
+    Match_Stats,
+    Pair_Hash> stats;
+  
   Tournament& operator+= (const Game_Record &game) {
     // If the match entry doesn't exist, then a default one will be automatically constructed.
     stats[{game.p0_name, game.p1_name}] += game;
@@ -176,12 +186,32 @@ struct Tournament {
   }
 };
 
-/*template <Bot_T... Bs>
-Tournament simulate () {
+std::ostream& operator<< (std::ostream &os, const Tournament t) {
+  for (const auto &[names, stat] : t.stats) {
+    os << names.first << " vs " << names.second << ":\n";
+    os << stat << "\n\n";
+  }
+
+  return os;
+}
+
+template <Bot_T... Bs>
+Tournament simulate (const size_t games_per_round) {
+  std::mt19937 seed_rng {std::random_device{}()};
+  
   Tournament tournament {};
 
-  std::tuple
+  std::tuple<Bs...> bots {};
+
+  for (size_t i {0}; i < games_per_round; i++) {
+    std::apply([&](auto&... a) {
+      // For each bot,
+      (std::apply([&a, &tournament, &seed_rng](auto&... b) {
+	// Play it against every other bot.
+	((tournament += play_game(a, b, seed_rng())), ...);
+      }, bots), ...);
+    }, bots);
+  }
 
   return tournament;
 }
-*/
