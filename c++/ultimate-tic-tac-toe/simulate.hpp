@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <map>
 #include <utility>
 #include <tuple>
@@ -45,33 +46,26 @@ std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   return os;
 }
 
-template <Bot_T A, Bot_T B>
-Game_Record play_game (A &p0, B &p1, const uint64_t seed) {
-  Game_Record game {p0.get_name(), p1.get_name(), seed};
-  // If they are the same name, then label them a and b.
-  if (game.p0_name == game.p1_name) {
-    game.p0_name += "_a";
-    game.p1_name += "_b";
-  }
+Game_Record play_game (const Bot_Ptr& p0, const Bot_Ptr& p1, const uint64_t seed) {
+  Game_Record game {p0->get_name(), p1->get_name(), seed};
 
-  p0.set_seed(seed);
-  p1.set_seed(seed);
+  p0->reset(seed);
+  p1->reset(seed);
 	       
   Board board {};
   Move move {};
 
   while (!terminal(board)) {
-    if (board.next_player == X) move = p0(board);
-    else move = p1(board);
+    if (board.next_player == X) move = (*p0)(board);
+    else move = (*p1)(board);
     
     if (!play_move(board, move)) {
       const std::string msg {
-	"Illegal move " +
 	to_string(move) +
 	" played by " +
 	(board.next_player == X ?
-	 (p0.get_name() + " against " + p1.get_name()) :
-	 (p1.get_name() + " against " + p0.get_name())) +
+	 (p0->get_name() + " against " + p1->get_name()) :
+	 (p1->get_name() + " against " + p0->get_name())) +
 	" on board\n" +
 	to_string(board) +
 	"\n"
@@ -83,7 +77,7 @@ Game_Record play_game (A &p0, B &p1, const uint64_t seed) {
     game.moves.push_back(move);
   }
 
-  switch (Heur1::eval(board)) {
+  switch (heur1(board)) {
   case -10000:
     game.result = GAME_RESULT::PLAYER0_WIN;
     break;
@@ -179,6 +173,7 @@ struct Tournament {
   
   Tournament& operator+= (const Game_Record &game) {
     // If the match entry doesn't exist, then a default one will be automatically constructed.
+    // Doesn't matter that it's empty because the game will be pushed onto it immediately after.
     stats[{game.p0_name, game.p1_name}] += game;
     games.push_back(game);
 
@@ -195,22 +190,16 @@ std::ostream& operator<< (std::ostream &os, const Tournament t) {
   return os;
 }
 
-template <Bot_T... Bs>
-Tournament simulate (const size_t games_per_round) {
+Tournament simulate (const std::span<const Bot_Ptr> bots, const size_t games_per_pair) {
   std::mt19937 seed_rng {std::random_device{}()};
-  
   Tournament tournament {};
 
-  std::tuple<Bs...> bots {};
-
-  for (size_t i {0}; i < games_per_round; i++) {
-    std::apply([&](auto&... a) {
-      // For each bot,
-      (std::apply([&a, &tournament, &seed_rng](auto&... b) {
-	// Play it against every other bot.
-	((tournament += play_game(a, b, seed_rng())), ...);
-      }, bots), ...);
-    }, bots);
+  for (const Bot_Ptr &a : bots) {
+    for (const Bot_Ptr &b : bots) {
+      for (size_t i {0}; i < games_per_pair; i++) {
+	tournament += play_game(a, b, seed_rng());
+      }
+    }
   }
 
   return tournament;
