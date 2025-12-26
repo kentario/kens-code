@@ -67,7 +67,7 @@ struct Board {
   // false/0 for X to play, true/1 for O to play
   // This aligns with indexing of subboards and macroboards, as 0 means the X board and 1 means the O board.
   bool next_player {X};
-  // This is temporary.
+  // This is temporary. or perhapse it will be next_player that is temporary.
   size_t moves_played {0};
 };
 
@@ -151,8 +151,9 @@ bool play_move (Board &board, const Move move) {
 std::vector<Move> legal_moves (const Board board) {
   std::vector<Move> moves {};
 
+  // If a specific subboard is being forced,
   if (board.forced_sb < 9) {
-    // All empty squares in the specific subboard.
+    // then add all empty squares that subboard.
     // uint16_t | uint16_t => int.
     uint16_t subboard {static_cast<uint16_t>(board.subboards[board.forced_sb][X] | board.subboards[board.forced_sb][O])};
 

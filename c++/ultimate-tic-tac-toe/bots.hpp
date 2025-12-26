@@ -21,8 +21,8 @@ public:
   // Returns the move that it wants to play
   virtual Move operator() (const Board board) = 0;
 
-  // Doesn't do anything if bot doesn't have randomness.
-  virtual void set_seed (const uint64_t) {}
+  // Would clear anything cached and other stuff, and also sets the seed.
+  virtual void reset (const uint64_t) {}
   
   std::string get_name () const { return name; }
 };
@@ -32,93 +32,85 @@ concept Bot_T = requires {
   std::is_base_of_v<Bot, T>;
 };
 
-using Bot_Pointer = std::unique_ptr<Bot>;
+using Bot_Ptr = std::unique_ptr<Bot>;
 
 class Random : public Bot {
 protected:
   std::mt19937 rng {};
 public:
-  Random () :
-    Bot {"R"} {}
+  Random (const std::string &name, const uint64_t seed = 0) :
+    Bot {name}, rng {seed} {}
   
-  Random (const std::string &name) :
-    Bot {name} {}
-
-  void set_seed (const uint64_t seed) override { rng.seed(seed); }
+  void reset (const uint64_t seed = 0) override { rng.seed(seed); }
   
   Move operator() (const Board board) override {
     std::vector<Move> moves {legal_moves(board)};
+    // If there are no legal moves, then return an invalid move.
+    // TODO benchmark this. Also remember to do this with minimax.
+    if (terminal(board)) return {9, 9};
     std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
     return moves[dist(rng)];
   }
 };
 
-struct Heur1 {
-  static constexpr std::string name {"h1"};
-  
-  static int eval (const Board board) {
-    // Check if there is a win
-    for (const auto mask : WIN_MASKS) {
-      // Player 0 (X) is minimizing.
-      if ((mask & board.macroboards[MIN]) == mask) return -10000;
-      if ((mask & board.macroboards[MAX]) == mask) return  10000;
-    }
-
-    // If max wins a board, +1, if min wins a board, -1.
-    return std::popcount(board.macroboards[MAX]) - std::popcount(board.macroboards[MIN]);
+int heur1 (const Board board) {
+  // Check if there is a win
+  for (const auto mask : WIN_MASKS) {
+    // Player 0 (X) is minimizing.
+    if ((mask & board.macroboards[MIN]) == mask) return -10000;
+    if ((mask & board.macroboards[MAX]) == mask) return  10000;
   }
-};
 
-struct Heur2 {
-  static constexpr std::string name {"h2"};
-  
-  static int eval (const Board board) {
-    for (const auto mask : WIN_MASKS) {
-      if ((mask & board.macroboards[MIN]) == mask) return -10000;
-      if ((mask & board.macroboards[MAX]) == mask) return  10000;
-    }
+  // If max wins a board, +1, if min wins a board, -1.
+  return std::popcount(board.macroboards[MAX]) - std::popcount(board.macroboards[MIN]);
+}
 
-    // Middle = 6 points, corner = 5 points, edge = 4 points.
-    return
-      (board.macroboards[MAX] & MOVE_MASKS[4] ? 6 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[0] ? 5 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[2] ? 5 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[6] ? 5 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[8] ? 5 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[1] ? 4 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[3] ? 4 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[5] ? 4 : 0) +
-      (board.macroboards[MAX] & MOVE_MASKS[7] ? 4 : 0) -
+int heur2 (const Board board) {
+  for (const auto mask : WIN_MASKS) {
+    if ((mask & board.macroboards[MIN]) == mask) return -10000;
+    if ((mask & board.macroboards[MAX]) == mask) return  10000;
+  }
+
+  // Middle = 6 points, corner = 5 points, edge = 4 points.
+  return
+    (board.macroboards[MAX] & MOVE_MASKS[4] ? 6 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[0] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[2] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[6] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[8] ? 5 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[1] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[3] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[5] ? 4 : 0) +
+    (board.macroboards[MAX] & MOVE_MASKS[7] ? 4 : 0) -
     
-      (board.macroboards[MIN] & MOVE_MASKS[4] ? 6 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[0] ? 5 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[2] ? 5 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[6] ? 5 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[8] ? 5 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[1] ? 4 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[3] ? 4 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[5] ? 4 : 0) -
-      (board.macroboards[MIN] & MOVE_MASKS[7] ? 4 : 0);
-  }
-};
+    (board.macroboards[MIN] & MOVE_MASKS[4] ? 6 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[0] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[2] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[6] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[8] ? 5 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[1] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[3] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[5] ? 4 : 0) -
+    (board.macroboards[MIN] & MOVE_MASKS[7] ? 4 : 0);
+}
 
-template <size_t max_depth, typename Heuristic>
+// For later on if I get confused.
+// https://www.learncpp.com/cpp-tutorial/function-pointers/
+using Heuristic = std::function<int(Board)>;
+
 class Minimax : public Bot {
 protected:
-  std::mt19937 rng {};
+  const size_t max_depth;
+  const Heuristic eval;
+  std::mt19937 rng;
 public:
-  // Automatically generates name.
-  // M for minimax, number for max depth, then the name of the heuristic.
-  Minimax () :
-    Bot {"M" + std::to_string(max_depth) + Heuristic::name} {}
+  Minimax (const std::string &name, const size_t max_depth, const Heuristic eval, const uint64_t seed = 0) :
+    Bot {name}, max_depth {max_depth}, eval {eval}, rng {seed} {}
   
-  Minimax (const std::string &name) :
-    Bot {name} {}
-  
-  void set_seed (const uint64_t seed) override { rng.seed(seed); }
+  void reset (const uint64_t seed = 0) override { rng.seed(seed); }
   
   int minimax (Board board, size_t depth, int alpha, int beta) {
-    if (terminal(board) || depth <= 0) return Heuristic::eval(board);
+    if (terminal(board) || depth <= 0) return eval(board);
 
     // If it is the min player's turn, then they will try to minimize the evaluation of the board.
     // X is trying to minimize, O is trying to maximize.
