@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "constants.hpp"
 #include "game.hpp"
 
 class Bot {
@@ -47,6 +48,7 @@ public:
     std::vector<Move> moves {legal_moves(board)};
     // If there are no legal moves, then return an invalid move.
     // TODO benchmark this. Also remember to do this with minimax.
+    // and make stuff happen if there are no legal moves.
     if (terminal(board)) return {9, 9};
     std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
     return moves[dist(rng)];
@@ -57,41 +59,41 @@ int heur1 (const Board board) {
   // Check if there is a win
   for (const auto mask : WIN_MASKS) {
     // Player 0 (X) is minimizing.
-    if ((mask & board.macroboards[MIN]) == mask) return -10000;
-    if ((mask & board.macroboards[MAX]) == mask) return  10000;
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
   }
 
   // If max wins a board, +1, if min wins a board, -1.
-  return std::popcount(board.macroboards[MAX]) - std::popcount(board.macroboards[MIN]);
+  return std::popcount(board.macroboards[to_index(Role::MAX)]) - std::popcount(board.macroboards[to_index(Role::MIN)]);
 }
 
 int heur2 (const Board board) {
   for (const auto mask : WIN_MASKS) {
-    if ((mask & board.macroboards[MIN]) == mask) return -10000;
-    if ((mask & board.macroboards[MAX]) == mask) return  10000;
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
   }
 
   // Middle = 6 points, corner = 5 points, edge = 4 points.
   return
-    (board.macroboards[MAX] & MOVE_MASKS[4] ? 6 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[0] ? 5 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[2] ? 5 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[6] ? 5 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[8] ? 5 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[1] ? 4 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[3] ? 4 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[5] ? 4 : 0) +
-    (board.macroboards[MAX] & MOVE_MASKS[7] ? 4 : 0) -
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[4] ? 6 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[0] ? 5 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[2] ? 5 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[6] ? 5 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[8] ? 5 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[1] ? 4 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[3] ? 4 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[5] ? 4 : 0) +
+    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[7] ? 4 : 0) -
     
-    (board.macroboards[MIN] & MOVE_MASKS[4] ? 6 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[0] ? 5 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[2] ? 5 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[6] ? 5 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[8] ? 5 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[1] ? 4 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[3] ? 4 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[5] ? 4 : 0) -
-    (board.macroboards[MIN] & MOVE_MASKS[7] ? 4 : 0);
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[4] ? 6 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[0] ? 5 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[2] ? 5 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[6] ? 5 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[8] ? 5 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[1] ? 4 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[3] ? 4 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[5] ? 4 : 0) -
+    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[7] ? 4 : 0);
 }
 
 // For later on if I get confused.
@@ -115,7 +117,7 @@ public:
     // If it is the min player's turn, then they will try to minimize the evaluation of the board.
     // X is trying to minimize, O is trying to maximize.
     int value;
-    if (board.next_player == MIN) {
+    if (is_min(board.next_player())) {
       // X's turn
       // Trying to minimize, so start with the biggest possible value and find better and better eevaluations.
       value = std::numeric_limits<int>::max();
@@ -145,15 +147,15 @@ public:
     // Index and value of the best move.
     // If the current player is X, they are trying to minimize, so start with the biggest possible value.
     // Vice versa for O.
-    std::array<int, 2> best_move {-1, board.next_player == MAX ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    std::array<int, 2> best_move {-1, is_max(board.next_player()) ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
     for (size_t i {0}; i < moves.size(); i++) {
       int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
 
       //      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
       
       // If the current player wants to maximize, they want value to be higher than the best found so far.
-      if ((board.next_player == MAX && value > best_move[1]) ||
-	  (board.next_player == MIN && value < best_move[1]))
+      if ((is_max(board.next_player()) && value > best_move[1]) ||
+	  (is_min(board.next_player()) && value < best_move[1]))
 	best_move = {static_cast<int>(i), value};
     }
 

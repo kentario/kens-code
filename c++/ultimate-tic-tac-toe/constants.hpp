@@ -50,6 +50,10 @@ constexpr uint8_t to_index (const Role r) {
   return static_cast<uint8_t>(r);
 }
 
-constexpr bool operator== (const Player p, const Role r) {
-  return static_cast<uint8_t>(p) == static_cast<uint8_t>(r);
+constexpr bool is_min (const Player p) {
+  return p == Player::X;
+}
+
+constexpr bool is_max (const Player p) {
+  return p == Player::O;
 }
