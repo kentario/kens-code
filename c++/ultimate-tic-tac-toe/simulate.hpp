@@ -59,7 +59,7 @@ Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed
     if (board.next_player() == Player::X) move = (*p0)(board);
     else move = (*p1)(board);
     
-    if (!play_move(board, move)) {
+    if (!board.play_move(move)) {
       const std::string msg {
 	to_string(move) +
 	" played by " +

@@ -30,7 +30,7 @@ Board random_position (std::mt19937 &rng, const bool terminal_allowed, const siz
 
       const Move move {r(board)};
       
-      if (!play_move(board, move)) {
+      if (!board.play_move(move)) {
 	const std::string msg {
 	  to_string(move) +
 	  " played by random on board\n" +
@@ -107,7 +107,7 @@ Benchmark_Result benchmark_find_legal_moves (std::span<Board> positions) {
   auto start = std::chrono::steady_clock::now();
 
   for (const auto &p : positions) {
-    volatile std::vector<Move> moves __attribute__((unused)) {legal_moves(p)};
+    volatile std::vector<Move> moves __attribute__((unused)) {p.legal_moves()};
   }
   
   auto end = std::chrono::steady_clock::now();

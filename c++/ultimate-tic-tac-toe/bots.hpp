@@ -45,7 +45,7 @@ public:
   void reset (const uint64_t seed = 0) override { rng.seed(seed); }
   
   Move operator() (const Board board) override {
-    std::vector<Move> moves {legal_moves(board)};
+    std::vector<Move> moves {board.legal_moves()};
     // If there are no legal moves, then return an invalid move.
     // TODO benchmark this. Also remember to do this with minimax.
     // and make stuff happen if there are no legal moves.
@@ -107,7 +107,7 @@ int heur3 (const Board &board) {
   }
 
   // More legal moves = better for the player about to play.
-  return subboard_values(board) + sign(board.next_player()) * legal_moves(board).size();
+  return subboard_values(board) + sign(board.next_player()) * board.count_legal_moves();
 }
 
 // For later on if I get confused.
@@ -135,16 +135,16 @@ public:
       // X's turn
       // Trying to minimize, so start with the biggest possible value and find better and better eevaluations.
       value = std::numeric_limits<int>::max();
-      for (const auto &move : legal_moves(board)) {
-	value = std::min(value, minimax(play_move_unsafe_value(board, move), depth - 1, alpha, beta));
+      for (const auto &move : board.legal_moves()) {
+	value = std::min(value, minimax(board.play_move_unsafe_value(move), depth - 1, alpha, beta));
 	beta = std::min(value, beta);
 	if (beta <= alpha) break;
       }
     } else {
       // O's turn
       value = std::numeric_limits<int>::min();
-      for (const auto &move : legal_moves(board)) {
-	value = std::max(value, minimax(play_move_unsafe_value(board, move), depth - 1, alpha, beta));
+      for (const auto &move : board.legal_moves()) {
+	value = std::max(value, minimax(board.play_move_unsafe_value(move), depth - 1, alpha, beta));
 	alpha = std::max(value, alpha);
 	if (beta <= alpha) break;
       }
@@ -155,7 +155,7 @@ public:
   
   Move operator() (const Board board) override {
     // Implement move ordering. have a good look ahead of 1 search to try and guess.
-    auto moves = legal_moves(board);
+    auto moves = board.legal_moves();
     // Shuffle the moves beforehand so that if there is a tie, the best one is picked randomly.
     std::shuffle(moves.begin(), moves.end(), rng);
     
@@ -164,7 +164,7 @@ public:
     // Vice versa for O.
     std::array<int, 2> best_move {-1, is_max(board.next_player()) ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
     for (size_t i {0}; i < moves.size(); i++) {
-      int value {minimax(play_move_unsafe_value(board, moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
+      int value {minimax(board.play_move_unsafe_value(moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
 
       //      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
       

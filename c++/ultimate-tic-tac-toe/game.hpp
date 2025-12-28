@@ -69,93 +69,130 @@ struct Board {
       // And the square is empty
       && ((subboards[move.subboard][to_index(Player::X)] | subboards[move.subboard][to_index(Player::O)]) & MOVE_MASKS[move.square]) == 0;
   }
+
+  // Updates the state of a subboard stored in the macroboard after a certain move is played.
+  void update_subboard_state (const size_t subboard) {
+    for (const auto mask : WIN_MASKS) {
+      for (size_t player {0}; player < 2; player++) {
+	// Win detected if everything under the mask is a 1, or in other words all squares required for a win are taken.
+	if ((mask & subboards[subboard][player]) == mask) {
+	  macroboards[player] |= MOVE_MASKS[subboard];
+	  return;
+	}
+      }
+    }
+  
+    // No wins detected on the subboard.
+    // Check for a draw.
+    // Draw occurs when all squares of a subboard have been taken.
+    if ((subboards[subboard][to_index(Player::X)] | subboards[subboard][to_index(Player::O)]) == FULL_BOARD) macroboards[2] |= MOVE_MASKS[subboard];
+  }
+
+  void play_move_unsafe (const Move move) {
+    // Play the move.
+    subboards[move.subboard][to_index(next_player())] |= MOVE_MASKS[move.square];
+    // Check if the subboard played on is now completed.
+    update_subboard_state(move.subboard);
+    // If the board played on is completed, the next move can be anywhere.
+    // Otherwise it has to be on subboard corresponding to the square played on.
+    if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[move.square])
+      forced_sb = ANY_SUBBOARD;
+    else forced_sb = move.square;
+  
+    moves_played++;
+  }
+
+  Board play_move_unsafe_value (const Move move) const {
+    Board result {*this};
+    
+    result.play_move_unsafe(move);
+    
+    return result;
+  }
+
+  // Returns whether the move succeeded.
+  bool play_move (const Move move) {
+    if (is_legal(move)) {
+      play_move_unsafe(move);
+      return true;
+    }
+
+    return false;
+  }
+
+  // Returns a vector of all legal moves.
+  std::vector<Move> legal_moves () const {
+    std::vector<Move> moves {};
+
+    // If a specific subboard is being forced,
+    if (forced_sb < ANY_SUBBOARD) {
+      // then add all empty squares that subboard.
+      // uint16_t | uint16_t => int.
+      const uint16_t subboard {
+	static_cast<uint16_t>
+	(subboards[forced_sb][to_index(Player::X)] |
+	 subboards[forced_sb][to_index(Player::O)])
+      };
+
+      // For each square, check if its empty,
+      for (size_t s {0}; s < 9; s++) {
+	// And if so, add it to the list of valid moves.
+	if (!(subboard & MOVE_MASKS[s])) moves.push_back({forced_sb, s});
+      }
+    } else {
+      // Add all empty squares.
+      // Same as previous, but repeated for all subboards.
+      for (size_t b {0}; b < 9; b++) {
+	// If the board has been completed, skip it.
+	if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[b]) continue;
+      
+	const uint16_t subboard {
+	  static_cast<uint16_t>
+	  (subboards[b][to_index(Player::X)] |
+	   subboards[b][to_index(Player::O)])
+	};
+      
+	for (size_t s {0}; s < 9; s++) {
+	  if (!(subboard & MOVE_MASKS[s])) moves.push_back({b, s});
+	}
+      }
+    }
+
+    return moves;
+  }
+
+  int count_legal_moves () const {
+    if (forced_sb < ANY_SUBBOARD) {
+      // Bitboard for all taken squares in the subboard.
+      const uint16_t subboard {
+	static_cast<uint16_t>
+	(subboards[forced_sb][to_index(Player::X)] |
+	 subboards[forced_sb][to_index(Player::O)])
+      };
+      // Count number of 0s.
+      // There are 9 bits being used, and the number of 0s would be 9 minus the number of 1s.
+      return 9 - std::popcount(subboard);
+    } else {
+      int count {0};
+      // Count the number of legal moves in every unfinished board.
+      for (size_t b {0}; b < 9; b++) {
+	// If the board has been completed, skip it.
+	if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[b]) continue;
+
+    	const uint16_t subboard {
+	  static_cast<uint16_t>
+	  (subboards[b][to_index(Player::X)] |
+	   subboards[b][to_index(Player::O)])
+	};
+
+	count += 9 - std::popcount(subboard);
+      }
+
+      return count;
+    }
+  }
 };
 static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
-
-// Updates the state of a subboard stored in the macroboard after a certain move is played.
-void update_subboard_state (Board &board, const size_t subboard) {
-  for (const auto mask : WIN_MASKS) {
-    for (size_t player {0}; player < 2; player++) {
-      // Win detected if everything under the mask is a 1, or in other words all squares required for a win are taken.
-      if ((mask & board.subboards[subboard][player]) == mask) {
-	board.macroboards[player] |= MOVE_MASKS[subboard];
-	return;
-      }
-    }
-  }
-  
-  // No wins detected on the subboard.
-  // Check for a draw.
-  // Draw occurs when all squares of a subboard have been taken.
-  if ((board.subboards[subboard][to_index(Player::X)] | board.subboards[subboard][to_index(Player::O)]) == FULL_BOARD) board.macroboards[2] |= MOVE_MASKS[subboard];
-}
-
-void play_move_unsafe (Board &board, const Move move) {
-  // Play the move.
-  board.subboards[move.subboard][to_index(board.next_player())] |= MOVE_MASKS[move.square];
-  // Check if the subboard played on is now completed.
-  update_subboard_state(board, move.subboard);
-  // If the board played on is completed, the next move can be anywhere.
-  // Otherwise it has to be on subboard corresponding to the square played on.
-  if ((board.macroboards[to_index(Player::X)] | board.macroboards[to_index(Player::O)] | board.macroboards[2]) & MOVE_MASKS[move.square])
-    board.forced_sb = ANY_SUBBOARD;
-  else board.forced_sb = move.square;
-  
-  board.moves_played++;
-}
-
-Board play_move_unsafe_value (const Board board, const Move move) {
-  Board res {board};
-
-  play_move_unsafe(res, move);
-
-  return res;
-}
-
-bool play_move (Board &board, const Move move) {
-  if (board.is_legal(move)) {
-    play_move_unsafe(board, move);
-    return true;
-  }
-
-  return false;
-}
-
-// Returns a vector of all legal moves.
-std::vector<Move> legal_moves (const Board &board) {
-  std::vector<Move> moves {};
-
-  // If a specific subboard is being forced,
-  if (board.forced_sb < ANY_SUBBOARD) {
-    // then add all empty squares that subboard.
-    // uint16_t | uint16_t => int.
-    uint16_t subboard {static_cast<uint16_t>(board.subboards[board.forced_sb][to_index(Player::X)] | board.subboards[board.forced_sb][to_index(Player::O)])};
-
-    // For each square, check if its empty,
-    for (size_t s {0}; s < 9; s++) {
-      // And if so, add it to the list of valid moves.
-      if (!(subboard & MOVE_MASKS[s])) moves.push_back({board.forced_sb, s});
-    }
-  } else {
-    // Add all empty squares.
-    // Same as previous, but repeated for all subboards.
-    for (size_t b {0}; b < 9; b++) {
-      // If the board has been completed, skip it.
-      if ((board.macroboards[to_index(Player::X)] | board.macroboards[to_index(Player::O)] | board.macroboards[2]) & MOVE_MASKS[b]) continue;
-      
-      uint16_t subboard {
-	static_cast<uint16_t>
-	(board.subboards[b][to_index(Player::X)] | board.subboards[b][to_index(Player::O)])
-      };
-      
-      for (size_t s {0}; s < 9; s++) {
-	if (!(subboard & MOVE_MASKS[s])) moves.push_back({b, s});
-      }
-    }
-  }
-
-  return moves;
-}
 
 std::string to_string (const Board &board) {
   // Convert bitboard representation into array of boards.
