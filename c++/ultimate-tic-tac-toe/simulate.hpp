@@ -46,7 +46,7 @@ std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   return os;
 }
 
-Game_Record play_game (const Bot_Ptr& p0, const Bot_Ptr& p1, const uint64_t seed) {
+Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed) {
   Game_Record game {p0->get_name(), p1->get_name(), seed};
 
   p0->reset(seed);
@@ -55,7 +55,7 @@ Game_Record play_game (const Bot_Ptr& p0, const Bot_Ptr& p1, const uint64_t seed
   Board board {};
   Move move {};
 
-  while (!terminal(board)) {
+  while (!board.terminal()) {
     if (board.next_player() == Player::X) move = (*p0)(board);
     else move = (*p1)(board);
     
@@ -190,12 +190,12 @@ std::ostream& operator<< (std::ostream &os, const Tournament t) {
   return os;
 }
 
-Tournament simulate (const std::span<const Bot_Ptr> bots, const size_t games_per_pair) {
+Tournament simulate (const std::span<const Bot_ptr> bots, const size_t games_per_pair) {
   std::mt19937 seed_rng {std::random_device{}()};
   Tournament tournament {};
 
-  for (const Bot_Ptr &a : bots) {
-    for (const Bot_Ptr &b : bots) {
+  for (const Bot_ptr &a : bots) {
+    for (const Bot_ptr &b : bots) {
       for (size_t i {0}; i < games_per_pair; i++) {
 	tournament += play_game(a, b, seed_rng());
       }

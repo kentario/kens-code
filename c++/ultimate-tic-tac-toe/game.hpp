@@ -8,6 +8,7 @@
 #include <vector>
 #include <fstream>
 #include <exception>
+#include <functional>
 
 #include "constants.hpp"
 
@@ -43,33 +44,33 @@ struct Board {
   Player next_player () const {
     return static_cast<Player>(moves_played & 1);
   }
-};
-static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
 
-bool is_legal (const Board board, const Move move) {
-  // It is within the board
-  return move.subboard < 9 && move.square < 9
-    // And on the correct subboard
-    && (board.forced_sb == ANY_SUBBOARD || move.subboard == board.forced_sb)
-    // And the square is empty
-    && ((board.subboards[move.subboard][to_index(Player::X)] | board.subboards[move.subboard][to_index(Player::O)]) & MOVE_MASKS[move.square]) == 0;
-}
-
-bool terminal (const Board board) {
-  // Check if there is a win.
-  for (const auto mask : WIN_MASKS) {
-    for (size_t player {0}; player < 2; player++) {
-      // Check for a 3 in a row overall.
-      if ((mask & board.macroboards[player]) == mask) return true;
+  bool terminal () const {
+    // Check if there is a win.
+    for (const auto mask : WIN_MASKS) {
+      for (size_t player {0}; player < 2; player++) {
+	// Check for a 3 in a row overall.
+	if ((mask & macroboards[player]) == mask) return true;
+      }
     }
+
+    // Check for a draw.
+    // Happens if the board is full.
+    if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) == FULL_BOARD) return true;
+
+    return false;
   }
 
-  // Check for a draw.
-  // Happens if the board is full.
-  if ((board.macroboards[to_index(Player::X)] | board.macroboards[to_index(Player::O)] | board.macroboards[2]) == FULL_BOARD) return true;
-
-  return false;
-}
+  bool is_legal (const Move move) const {
+    // It is within the board
+    return move.subboard < 9 && move.square < 9
+      // And on the correct subboard
+      && (forced_sb == ANY_SUBBOARD || move.subboard == forced_sb)
+      // And the square is empty
+      && ((subboards[move.subboard][to_index(Player::X)] | subboards[move.subboard][to_index(Player::O)]) & MOVE_MASKS[move.square]) == 0;
+  }
+};
+static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
 
 // Updates the state of a subboard stored in the macroboard after a certain move is played.
 void update_subboard_state (Board &board, const size_t subboard) {
@@ -111,9 +112,8 @@ Board play_move_unsafe_value (const Board board, const Move move) {
   return res;
 }
 
-
 bool play_move (Board &board, const Move move) {
-  if (is_legal(board, move)) {
+  if (board.is_legal(move)) {
     play_move_unsafe(board, move);
     return true;
   }
@@ -122,7 +122,7 @@ bool play_move (Board &board, const Move move) {
 }
 
 // Returns a vector of all legal moves.
-std::vector<Move> legal_moves (const Board board) {
+std::vector<Move> legal_moves (const Board &board) {
   std::vector<Move> moves {};
 
   // If a specific subboard is being forced,
@@ -239,19 +239,31 @@ std::ostream& operator<< (std::ostream &os, const Board board) {
   return os << to_string(board);
 }
 
-void save_positions (const std::string &filename, const Board board[], const size_t length, const bool append) {
+void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {
   std::ofstream out {filename, std::ios::binary | (append ? std::ios::app : std::ios::trunc)};
   if (!out) throw std::runtime_error {"Failed to open file"};
 
-  out.write(reinterpret_cast<const char*>(board), sizeof(Board) * length);
+  out.write(reinterpret_cast<const char*>(board), sizeof(Board) * count);
 }
 
-std::vector<Board> load_positions (const std::string &filename) {
-  std::vector<Board> boards {};
-  
-  std::ifstream in {filename, std::ios::binary};
+std::vector<Board> load_positions (const std::string &filename, const size_t count) {
+  // Starting at the end to determine file size.
+  std::ifstream in {filename, std::ios::binary | std::ios::ate};
   if (!in) throw std::runtime_error {"Failed to open file"};
 
+  std::streamsize size {in.tellg()};
+  // Only boards are stored in the file, so the file size should be a multiple of the board size.
+  if (size % sizeof(Board) != 0) throw std::runtime_error {"Corrupt board file"};
+
+  // Go back to beginning to read data.
+  in.seekg(0);
+
+  // If there aren't enough boards stored.
+  if (count > size/sizeof(Board)) throw std::runtime_error {"Not enough stored board positions"};
+  
+  std::vector<Board> boards(count);
+  
+  in.read(reinterpret_cast<char*>(boards.data()), sizeof(Board) * count);
 
   return boards;
 }

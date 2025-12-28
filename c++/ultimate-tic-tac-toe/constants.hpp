@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 
-constexpr uint16_t WIN_MASKS [8] {
+constexpr std::array<uint16_t, 8> WIN_MASKS {
   // Horizontal
   0b111000000,
   0b000111000,
@@ -16,7 +17,7 @@ constexpr uint16_t WIN_MASKS [8] {
   0b001010100
 };
 
-constexpr uint16_t MOVE_MASKS [9] {
+constexpr std::array<uint16_t, 9> MOVE_MASKS {
   0b100000000,
   0b010000000,
   0b001000000,
@@ -56,4 +57,20 @@ constexpr bool is_min (const Player p) {
 
 constexpr bool is_max (const Player p) {
   return p == Player::O;
+}
+
+constexpr Player other (const Player p) {
+  return p == Player::X ? Player::O : Player::X;
+}
+
+constexpr Role other (const Role r) {
+  return r == Role::MIN ? Role::MAX : Role::MIN;
+}
+
+constexpr int sign (const Player p) {
+  return p == Player::X ? -1 : 1;
+}
+
+constexpr int sign (const Role r) {
+  return r == Role::MIN ? -1 : 1;
 }

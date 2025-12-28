@@ -33,7 +33,7 @@ concept Bot_T = requires {
   std::is_base_of_v<Bot, T>;
 };
 
-using Bot_Ptr = std::unique_ptr<Bot>;
+using Bot_ptr = std::unique_ptr<Bot>;
 
 class Random : public Bot {
 protected:
@@ -49,13 +49,13 @@ public:
     // If there are no legal moves, then return an invalid move.
     // TODO benchmark this. Also remember to do this with minimax.
     // and make stuff happen if there are no legal moves.
-    if (terminal(board)) return {9, 9};
+    if (board.terminal()) return {9, 9};
     std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
     return moves[dist(rng)];
   }
 };
 
-int heur1 (const Board board) {
+int heur1 (const Board &board) {
   // Check if there is a win
   for (const auto mask : WIN_MASKS) {
     // Player 0 (X) is minimizing.
@@ -67,12 +67,7 @@ int heur1 (const Board board) {
   return std::popcount(board.macroboards[to_index(Role::MAX)]) - std::popcount(board.macroboards[to_index(Role::MIN)]);
 }
 
-int heur2 (const Board board) {
-  for (const auto mask : WIN_MASKS) {
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
-  }
-
+int subboard_values (const Board &board) {
   // Middle = 6 points, corner = 5 points, edge = 4 points.
   return
     (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[4] ? 6 : 0) +
@@ -96,6 +91,25 @@ int heur2 (const Board board) {
     (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[7] ? 4 : 0);
 }
 
+int heur2 (const Board &board) {
+  for (const auto mask : WIN_MASKS) {
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
+  }
+
+  return subboard_values(board);
+}
+
+int heur3 (const Board &board) {
+  for (const auto mask : WIN_MASKS) {
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
+  }
+
+  // More legal moves = better for the player about to play.
+  return subboard_values(board) + sign(board.next_player()) * legal_moves(board).size();
+}
+
 // For later on if I get confused.
 // https://www.learncpp.com/cpp-tutorial/function-pointers/
 using Heuristic = std::function<int(Board)>;
@@ -112,7 +126,7 @@ public:
   void reset (const uint64_t seed = 0) override { rng.seed(seed); }
   
   int minimax (Board board, size_t depth, int alpha, int beta) {
-    if (terminal(board) || depth <= 0) return eval(board);
+    if (board.terminal() || depth <= 0) return eval(board);
 
     // If it is the min player's turn, then they will try to minimize the evaluation of the board.
     // X is trying to minimize, O is trying to maximize.
@@ -140,6 +154,7 @@ public:
   }
   
   Move operator() (const Board board) override {
+    // Implement move ordering. have a good look ahead of 1 search to try and guess.
     auto moves = legal_moves(board);
     // Shuffle the moves beforehand so that if there is a tie, the best one is picked randomly.
     std::shuffle(moves.begin(), moves.end(), rng);
