@@ -9,7 +9,7 @@
 #include "game.hpp"
 #include "bots.hpp"
 
-Board random_position (std::mt19937 rng, const bool terminal_allowed, const size_t min_moves = 20, const size_t max_moves = 40) {
+Board random_position (std::mt19937 &rng, const bool terminal_allowed, const size_t min_moves = 20, const size_t max_moves = 40) {
   Board board {};
   Random r {"", rng()};
 
@@ -26,7 +26,7 @@ Board random_position (std::mt19937 rng, const bool terminal_allowed, const size
 
     size_t moves_played {0};
     for (; moves_played < target_num_moves; moves_played++) {
-      if (terminal(board)) break;
+      if (board.terminal()) break;
 
       const Move move {r(board)};
       
@@ -47,7 +47,7 @@ Board random_position (std::mt19937 rng, const bool terminal_allowed, const size
     if (terminal_allowed) {
       board_found = (moves_played >= min_moves);
     } else {
-      board_found = (moves_played >= min_moves && !terminal(board));
+      board_found = (moves_played >= min_moves && !board.terminal());
     }
   }
 
@@ -103,6 +103,20 @@ Benchmark_Result benchmark_heuristic (Heuristic h, const std::string &name, std:
   };
 }
 
+Benchmark_Result benchmark_find_legal_moves (std::span<Board> positions) {
+  auto start = std::chrono::steady_clock::now();
 
-// TODO benchmark passing board by value vs reference.
-// TODO benchmark legal_moves taking a function to apply to each legal move as it is found, instead of returning a vector. This should make it so that the moves aren't iterated over twice.
+  for (const auto &p : positions) {
+    volatile std::vector<Move> moves __attribute__((unused)) {legal_moves(p)};
+  }
+  
+  auto end = std::chrono::steady_clock::now();
+  double ms {std::chrono::duration<double, std::milli>(end - start).count()};
+
+  return Benchmark_Result {
+    .name = "is_legal",
+    .positions = positions.size(),
+    .ms = ms,
+    .ms_per_position = ms/positions.size()
+  };
+}
