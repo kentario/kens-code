@@ -17,12 +17,35 @@ struct Move {
   size_t square {};
 };
 
+bool operator== (const Move a, const Move b) {
+  return a.subboard == b.subboard && a.square == b.square;
+}
+
 std::string to_string (const Move move) {
   return std::to_string(move.subboard) + " " + std::to_string(move.square);
 }
 
 std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';
+}
+
+// Counts the number of winning moves by the first player on some tic-tac-toe board.
+// Could be a macroboard, or could be a subboard.
+size_t count_winning_moves (const uint16_t a, const uint16_t b) {
+  size_t count {0};
+  // The board of non-empty squares:
+  const uint16_t filled {static_cast<uint16_t>(a | b)};
+  // For each empty square, count the number of two in a rows that correspond to it.
+  for (int s {0}; s < 9; s++) {
+    // If the square is taken, skip it.
+    if (filled & MOVE_MASKS[s]) continue;
+    // Otherwise, check if the two in a rows are being satisfied.
+    for (const uint16_t two_in_a_row : TWO_IN_A_ROWS[s]) {
+      if ((two_in_a_row & a) == two_in_a_row) count++;
+    }
+  }
+
+  return count;
 }
 
 static constexpr uint8_t ANY_SUBBOARD {9};
@@ -61,6 +84,10 @@ struct Board {
     return false;
   }
 
+  bool board_completed (const size_t subboard) const {
+    return ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[subboard]);
+  }
+
   bool is_legal (const Move move) const {
     // It is within the board
     return move.subboard < 9 && move.square < 9
@@ -95,8 +122,7 @@ struct Board {
     update_subboard_state(move.subboard);
     // If the board played on is completed, the next move can be anywhere.
     // Otherwise it has to be on subboard corresponding to the square played on.
-    if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[move.square])
-      forced_sb = ANY_SUBBOARD;
+    if (board_completed(move.square)) forced_sb = ANY_SUBBOARD;
     else forced_sb = move.square;
   
     moves_played++;
@@ -104,7 +130,6 @@ struct Board {
 
   Board play_move_unsafe_value (const Move move) const {
     Board result {*this};
-    
     result.play_move_unsafe(move);
     
     return result;
@@ -143,8 +168,7 @@ struct Board {
       // Add all empty squares.
       // Same as previous, but repeated for all subboards.
       for (size_t b {0}; b < 9; b++) {
-	// If the board has been completed, skip it.
-	if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[b]) continue;
+	if (board_completed(b)) continue;
       
 	const uint16_t subboard {
 	  static_cast<uint16_t>
@@ -161,34 +185,38 @@ struct Board {
     return moves;
   }
 
+  // The number of empty squares in a specific subboard.
+  size_t count_empty_squares (const size_t subboard) const {
+    // Bitboard for all taken squares in the subboard.
+    const uint16_t full_subboard {
+      static_cast<uint16_t>
+      (subboards[subboard][to_index(Player::X)] |
+       subboards[subboard][to_index(Player::O)])
+    };
+    // Count number of 0s.
+    // There are 9 bits being used, and the number of 0s would be 9 minus the number of 1s.
+    return 9 - std::popcount(full_subboard);
+  }
+  
+  // Total empty squares in the entire board.
+  size_t count_total_empty_squares () const {
+    size_t count {0};
+    
+    for (size_t b {0}; b < 9; b++) {
+      // If the board has been completed, skip it.
+      if (board_completed(b)) continue;
+      
+      count += count_empty_squares(b);
+    }
+
+    return count;
+  }
+  
   int count_legal_moves () const {
     if (forced_sb < ANY_SUBBOARD) {
-      // Bitboard for all taken squares in the subboard.
-      const uint16_t subboard {
-	static_cast<uint16_t>
-	(subboards[forced_sb][to_index(Player::X)] |
-	 subboards[forced_sb][to_index(Player::O)])
-      };
-      // Count number of 0s.
-      // There are 9 bits being used, and the number of 0s would be 9 minus the number of 1s.
-      return 9 - std::popcount(subboard);
+      return count_empty_squares(forced_sb);
     } else {
-      int count {0};
-      // Count the number of legal moves in every unfinished board.
-      for (size_t b {0}; b < 9; b++) {
-	// If the board has been completed, skip it.
-	if ((macroboards[to_index(Player::X)] | macroboards[to_index(Player::O)] | macroboards[2]) & MOVE_MASKS[b]) continue;
-
-    	const uint16_t subboard {
-	  static_cast<uint16_t>
-	  (subboards[b][to_index(Player::X)] |
-	   subboards[b][to_index(Player::O)])
-	};
-
-	count += 9 - std::popcount(subboard);
-      }
-
-      return count;
+      return count_total_empty_squares();
     }
   }
 };
