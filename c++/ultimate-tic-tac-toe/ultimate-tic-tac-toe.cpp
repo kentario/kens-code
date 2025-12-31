@@ -2,7 +2,10 @@
 #include <random>
 #include <exception>
 #include <memory>
+#include <array>
+#include <vector>
 
+#include "heuristic.hpp"
 #include "game.hpp"
 #include "bots.hpp"
 #include "simulate.hpp"
@@ -17,21 +20,50 @@ int main () {
     // }
     // save_positions("positions-100k", boards.data(), boards.size(), false);
     
-    std::vector<Board> boards {load_positions("positions-100k", 1000)};
-    Bot_ptr a = std::make_unique<Minimax>("m4h1", 6, heur1);
-    Bot_ptr b = std::make_unique<Minimax>("m4h2", 6, heur2);
-    Bot_ptr c = std::make_unique<Minimax>("m4h3", 6, heur3);
-    // std::cout << benchmark_bot_move_generation(*a, boards) << '\n';
-    // std::cout << benchmark_bot_move_generation(*b, boards) << '\n';
-    // std::cout << benchmark_bot_move_generation(*c, boards) << '\n';
+    //    std::array<Board, 10'000> boards {};
+    //    for (Board &board : boards) {
+    //      board = random_position(rng, false, 5, 10);
+    //    }
 
-    size_t num_games {200};
-    std::vector<Bot_ptr> bots;
-    bots.push_back(std::move(a));
-    bots.push_back(std::move(b));
-    bots.push_back(std::move(c));
-    std::cout << simulate(bots, num_games) << '\n';
+    //TODO SOMEWHERE ELSE
+    // make a function to check if the current position will just result in a draw
+    // todo
+    // pregenerate legal moves for all possible subboards.
     
+    std::vector boards100k {load_positions("positions-100k", 100'000)};
+    
+    std::array<Board, 1000> boards {};
+    for (int i {0}; i < 1'000; i++) {
+      boards[i] = random_position(rng, false, 10, 81);
+    }
+    std::sort(boards.begin(), boards.end(), [](const Board &a, const Board &b) {
+      return a.count_total_empty_squares() > b.count_total_empty_squares();
+    });
+
+    Board b {load_positions("test", 1)[0]};
+    Minimax m {"minimax", 5, Eval_Params {}, &heur2, rng()};
+    Negamax n {"negamax", 5, Eval_Params {}, &heur2, rng()};
+
+    std::cout << benchmark_bot_move_generation(m, boards100k);
+    std::cout << benchmark_bot_move_generation(n, boards100k);
+    
+    /*4
+    Minimax_Full b {"test", 1, Eval_Params {}, &heur1, true, rng()};
+    //for checking minimaxfull efficiency/validity.
+    for (int i {999}; i >= 0; i--) {
+      std::cout << i << '\n';
+      std::cout << role(boards[i].next_player()) << " to play\n";
+      std::cout << boards[i] << "\n";
+      std::cout << "there are " << boards[i].count_total_empty_squares() << " empty squares in the board\n";
+      auto m = b(boards[i]);
+      std::cout << m << "\n\n\n";
+      if (!boards[i].is_legal(m)) {
+	std::cerr << "super bad stuff";
+	std::cerr << i << " " << m;
+	return EXIT_FAILURE;
+      }
+      }*/
+
   } catch (const std::exception &e) {
     std::cerr << e.what();
     
