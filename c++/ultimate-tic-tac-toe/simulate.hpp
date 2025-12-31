@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -10,14 +11,9 @@
 #include <functional>
 #include <algorithm>
 
+#include "constants.hpp"
 #include "game.hpp"
 #include "bots.hpp"
-
-enum class GAME_RESULT {
-  PLAYER0_WIN,
-  PLAYER1_WIN,
-  DRAW
-};
 
 struct Game_Record {
   std::string p0_name {};
@@ -25,20 +21,20 @@ struct Game_Record {
   
   uint64_t seed {};
   std::vector<Move> moves {};
-  GAME_RESULT result {};
+  Game_Result result {};
 };
 
 std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   os << game.p0_name << " vs " << game.p1_name << '\n';
   os << "seed: " << game.seed << '\n';
   switch (game.result) {
-  case GAME_RESULT::PLAYER0_WIN:
+  case Game_Result::PLAYER0_WIN:
     os << "p0 won";
     break;
-  case GAME_RESULT::PLAYER1_WIN:
+  case Game_Result::PLAYER1_WIN:
     os << "p1 won";
     break;
-  case GAME_RESULT::DRAW:
+  case Game_Result::DRAW:
     os << "draw";
     break;
   }
@@ -46,7 +42,8 @@ std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   return os;
 }
 
-Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed) {
+//Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed) {
+Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
   Game_Record game {p0->get_name(), p1->get_name(), seed};
 
   p0->reset(seed);
@@ -56,9 +53,18 @@ Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed
   Move move {};
 
   while (!board.terminal()) {
+    //    std::cout << board << '\n';
+    //    auto start = std::chrono::steady_clock::now();
     if (board.next_player() == Player::X) move = (*p0)(board);
     else move = (*p1)(board);
-    
+    //    auto end = std::chrono::steady_clock::now();
+    //    if (std::chrono::duration<double, std::milli>(end - start).count() > 500) {
+    //      save_positions("long position", &board, 1, true);
+    //      std::cout << "saved long taking position\n";
+    //    }
+    //    std::cout << board.count_total_empty_squares() << " empty squares\n";
+    //    std::cout << "chosen move " << move << '\n';
+     
     if (!board.play_move(move)) {
       const std::string msg {
 	to_string(move) +
@@ -77,17 +83,12 @@ Game_Record play_game (const Bot_ptr& p0, const Bot_ptr& p1, const uint64_t seed
     game.moves.push_back(move);
   }
 
-  switch (heur1(board)) {
-  case -10000:
-    game.result = GAME_RESULT::PLAYER0_WIN;
-    break;
-  case 10000:
-    game.result = GAME_RESULT::PLAYER1_WIN;
-    break;
-  default:
-    // Since the game is over (terminal(board) == false), then it must be a draw.
-    game.result = GAME_RESULT::DRAW;
-  };
+  // Since the game is over, the default value if no win is found should be a draw.
+  game.result = Game_Result::DRAW;
+  for (const auto mask : WIN_MASKS) {
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) game.result = Game_Result::PLAYER0_WIN;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) game.result = Game_Result::PLAYER1_WIN;
+  }
   
   return game;
 }
@@ -110,13 +111,13 @@ struct Match_Stats {
     }
     num_games++;
     switch (game.result) {
-    case GAME_RESULT::PLAYER0_WIN:
+    case Game_Result::PLAYER0_WIN:
       p0_wins++;
       break;
-    case GAME_RESULT::PLAYER1_WIN:
+    case Game_Result::PLAYER1_WIN:
       p1_wins++;
       break;
-    case GAME_RESULT::DRAW:
+    case Game_Result::DRAW:
       draws++;
       break;
     }
@@ -190,15 +191,18 @@ std::ostream& operator<< (std::ostream &os, const Tournament t) {
   return os;
 }
 
-Tournament simulate (const std::span<const Bot_ptr> bots, const size_t games_per_pair) {
+Tournament simulate (const std::span<Bot* const> bots, const size_t games_per_pair) {
   std::mt19937 seed_rng {std::random_device{}()};
   Tournament tournament {};
 
-  for (const Bot_ptr &a : bots) {
-    for (const Bot_ptr &b : bots) {
+  //  std::cout << "starting\n";
+  for (const auto &a : bots) {
+    for (const auto &b : bots) {
+      std::cout << "starting games for " << a->get_name() << " vs " << b->get_name() << '\n';
       for (size_t i {0}; i < games_per_pair; i++) {
+	//	std::cout << i << ' ' << std::flush;
 	tournament += play_game(a, b, seed_rng());
-      }
+      }// std::cout << '\n';
     }
   }
 
