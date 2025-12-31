@@ -1,6 +1,5 @@
 #pragma once
 
-#include <bit>
 #include <random>
 #include <functional>
 #include <array>
@@ -8,19 +7,32 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
+#include <cfloat>
 
 #include "constants.hpp"
 #include "game.hpp"
+#include "heuristic.hpp"
+
+constexpr bool DEBUG {false};
+
+struct Search_Stats {
+  size_t nodes {};
+  size_t cutoffs {};
+};
 
 class Bot {
 private:
   const std::string name {};
+  
 public:
+  Search_Stats stats {};
+  
   Bot (const std::string &name) :
     name {name} {}
 
   // Returns the move that it wants to play
-  virtual Move operator() (const Board board) = 0;
+  virtual Move operator() (const Board &board) = 0;
 
   // Would clear anything cached and other stuff, and also sets the seed.
   virtual void reset (const uint64_t) {}
@@ -38,142 +50,159 @@ using Bot_ptr = std::unique_ptr<Bot>;
 class Random : public Bot {
 protected:
   std::mt19937 rng {};
+  
 public:
   Random (const std::string &name, const uint64_t seed = 0) :
     Bot {name}, rng {seed} {}
   
   void reset (const uint64_t seed = 0) override { rng.seed(seed); }
   
-  Move operator() (const Board board) override {
+  virtual Move operator() (const Board &board) override {
     std::vector<Move> moves {board.legal_moves()};
-    // If there are no legal moves, then return an invalid move.
-    // TODO benchmark this. Also remember to do this with minimax.
-    // and make stuff happen if there are no legal moves.
     if (board.terminal()) return {9, 9};
     std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
     return moves[dist(rng)];
   }
 };
 
-int heur1 (const Board &board) {
-  // Check if there is a win
-  for (const auto mask : WIN_MASKS) {
-    // Player 0 (X) is minimizing.
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
-  }
-
-  // If max wins a board, +1, if min wins a board, -1.
-  return std::popcount(board.macroboards[to_index(Role::MAX)]) - std::popcount(board.macroboards[to_index(Role::MIN)]);
-}
-
-int subboard_values (const Board &board) {
-  // Middle = 6 points, corner = 5 points, edge = 4 points.
-  return
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[4] ? 6 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[0] ? 5 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[2] ? 5 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[6] ? 5 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[8] ? 5 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[1] ? 4 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[3] ? 4 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[5] ? 4 : 0) +
-    (board.macroboards[to_index(Role::MAX)] & MOVE_MASKS[7] ? 4 : 0) -
-    
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[4] ? 6 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[0] ? 5 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[2] ? 5 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[6] ? 5 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[8] ? 5 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[1] ? 4 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[3] ? 4 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[5] ? 4 : 0) -
-    (board.macroboards[to_index(Role::MIN)] & MOVE_MASKS[7] ? 4 : 0);
-}
-
-int heur2 (const Board &board) {
-  for (const auto mask : WIN_MASKS) {
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
-  }
-
-  return subboard_values(board);
-}
-
-int heur3 (const Board &board) {
-  for (const auto mask : WIN_MASKS) {
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -10000;
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  10000;
-  }
-
-  // More legal moves = better for the player about to play.
-  return subboard_values(board) + sign(board.next_player()) * board.count_legal_moves();
-}
-
-// For later on if I get confused.
-// https://www.learncpp.com/cpp-tutorial/function-pointers/
-using Heuristic = std::function<int(Board)>;
-
+template <Heuristic H>
 class Minimax : public Bot {
 protected:
   const size_t max_depth;
-  const Heuristic eval;
+  Eval_Params params;
+  const H eval;
   std::mt19937 rng;
+
 public:
-  Minimax (const std::string &name, const size_t max_depth, const Heuristic eval, const uint64_t seed = 0) :
-    Bot {name}, max_depth {max_depth}, eval {eval}, rng {seed} {}
+  Minimax (const std::string &name, const size_t max_depth,
+	   const Eval_Params &params, const H &eval,
+	   const uint64_t seed = 0) :
+    Bot {name}, max_depth {max_depth},
+    params {params}, eval {eval},
+    rng {seed} {}
   
-  void reset (const uint64_t seed = 0) override { rng.seed(seed); }
+  void reset (const uint64_t seed = 0) override {
+    rng.seed(seed);
+    stats = Search_Stats {};
+  }
   
-  int minimax (Board board, size_t depth, int alpha, int beta) {
-    if (board.terminal() || depth <= 0) return eval(board);
+  double minimax (Board board, size_t depth, double alpha, double beta) {
+    stats.nodes++;
+    if (board.terminal() || depth <= 0) return eval(board, params);
 
     // If it is the min player's turn, then they will try to minimize the evaluation of the board.
     // X is trying to minimize, O is trying to maximize.
-    int value;
+    double value;
+    std::vector<Move> moves {board.legal_moves()};
+
+    // Sorting moves would go here.
+    // sort_moves(moves);
+
     if (is_min(board.next_player())) {
       // X's turn
-      // Trying to minimize, so start with the biggest possible value and find better and better eevaluations.
-      value = std::numeric_limits<int>::max();
-      for (const auto &move : board.legal_moves()) {
+      // Trying to minimize, so start with the biggest possible value and find better and better evaluations.
+      value = DBL_MAX;
+      for (const auto &move : moves) {
 	value = std::min(value, minimax(board.play_move_unsafe_value(move), depth - 1, alpha, beta));
 	beta = std::min(value, beta);
-	if (beta <= alpha) break;
+	if (beta <= alpha) {
+	  stats.cutoffs++;
+	  break;
+	}
       }
     } else {
       // O's turn
-      value = std::numeric_limits<int>::min();
-      for (const auto &move : board.legal_moves()) {
+      value = -DBL_MAX;
+      for (const auto &move : moves) {
 	value = std::max(value, minimax(board.play_move_unsafe_value(move), depth - 1, alpha, beta));
 	alpha = std::max(value, alpha);
-	if (beta <= alpha) break;
+	if (beta <= alpha) {
+	  stats.cutoffs++;
+	  break;
+	}
       }
     }
 
     return value;
   }
-  
-  Move operator() (const Board board) override {
-    // Implement move ordering. have a good look ahead of 1 search to try and guess.
-    auto moves = board.legal_moves();
-    // Shuffle the moves beforehand so that if there is a tie, the best one is picked randomly.
-    std::shuffle(moves.begin(), moves.end(), rng);
-    
+
+  Move operator() (const Board &board) override {
+    if (board.terminal()) return {9, 9};
+    std::vector<Move> moves {board.legal_moves()};
+
     // Index and value of the best move.
     // If the current player is X, they are trying to minimize, so start with the biggest possible value.
     // Vice versa for O.
-    std::array<int, 2> best_move {-1, is_max(board.next_player()) ? std::numeric_limits<int>::min() : std::numeric_limits<int>::max()};
+    std::pair<size_t, double> best_move {-1, is_max(board.next_player()) ? -DBL_MAX : DBL_MAX};
     for (size_t i {0}; i < moves.size(); i++) {
-      int value {minimax(board.play_move_unsafe_value(moves[i]), max_depth - 1, std::numeric_limits<int>::min(), std::numeric_limits<int>::max())};
+      double value {minimax(board.play_move_unsafe_value(moves[i]), max_depth - 1, -DBL_MAX, DBL_MAX)};
+      //      std::cout << "(" << moves[i] << ", " << value << ") ";
 
-      //      std::cout << moves[i].subboard << moves[i].square << ": " << value << '\n';
-      
       // If the current player wants to maximize, they want value to be higher than the best found so far.
-      if ((is_max(board.next_player()) && value > best_move[1]) ||
-	  (is_min(board.next_player()) && value < best_move[1]))
-	best_move = {static_cast<int>(i), value};
+      if ((is_max(board.next_player()) && value > best_move.second) ||
+	  (is_min(board.next_player()) && value < best_move.second))
+	best_move = {i, value};
     }
 
-    return moves[best_move[0]];
+    return moves[best_move.first];
+  }
+};
+
+template <Heuristic H>
+class Negamax : public Bot {
+protected:
+  const size_t max_depth;
+  Eval_Params params;
+  const H eval;
+  std::mt19937 rng;
+
+public:
+  Negamax (const std::string &name, const size_t max_depth,
+	   const Eval_Params &params, const H &eval,
+	   const uint64_t seed = 0) :
+    Bot {name}, max_depth {max_depth},
+    params {params}, eval {eval},
+    rng {seed} {}
+  
+  void reset (const uint64_t seed = 0) override {
+    rng.seed(seed);
+    stats = Search_Stats {};
+  }
+  
+  double negamax (Board board, size_t depth, double alpha, double beta) {
+    stats.nodes++;
+    if (board.terminal() || depth <= 0) return eval(board, params) * sign(board.next_player());
+
+    std::vector<Move> moves {board.legal_moves()};
+    // Maybe order the moves here.
+    double value {-DBL_MAX};
+    for (const Move m : moves) {
+      value = std::max(value, -negamax(board.play_move_unsafe_value(m), depth - 1, -beta, -alpha));
+      alpha = std::max(alpha, value);
+      if (alpha >= beta) {
+	stats.cutoffs++;
+	break;
+      }
+    }
+    
+    return value;
+  }
+
+  Move operator() (const Board &board) override {
+    if (board.terminal()) return {9, 9};
+    std::vector<Move> moves {board.legal_moves()};
+
+    // Index and value of the best move.
+    // If the current player is X, they are trying to minimize, so start with the biggest possible value.
+    // Vice versa for O.
+    std::pair<size_t, double> best_move {-1, -DBL_MAX};
+    for (size_t i {0}; i < moves.size(); i++) {
+      double value {-negamax(board.play_move_unsafe_value(moves[i]), max_depth - 1, -DBL_MAX, DBL_MAX)};
+      //      std::cout << "(" << moves[i] << ", " << value << ") ";
+
+      if (value > best_move.second) best_move = {i, value};
+    }
+
+    return moves[best_move.first];
   }
 };
