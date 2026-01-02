@@ -20,11 +20,6 @@ int main () {
     // }
     // save_positions("positions-100k", boards.data(), boards.size(), false);
     
-    //    std::array<Board, 10'000> boards {};
-    //    for (Board &board : boards) {
-    //      board = random_position(rng, false, 5, 10);
-    //    }
-
     //TODO SOMEWHERE ELSE
     // make a function to check if the current position will just result in a draw
     // todo
@@ -40,12 +35,11 @@ int main () {
       return a.count_total_empty_squares() > b.count_total_empty_squares();
     });
 
-    Board b {load_positions("test", 1)[0]};
     Minimax m {"minimax", 5, Eval_Params {}, &heur2, rng()};
     Negamax n {"negamax", 5, Eval_Params {}, &heur2, rng()};
 
-    std::cout << benchmark_bot_move_generation(m, boards100k);
-    std::cout << benchmark_bot_move_generation(n, boards100k);
+    //    std::cout << benchmark_bot_move_generation(m, boards100k);
+    //    std::cout << benchmark_bot_move_generation(n, boards100k);
     
     /*4
     Minimax_Full b {"test", 1, Eval_Params {}, &heur1, true, rng()};
@@ -63,6 +57,30 @@ int main () {
 	return EXIT_FAILURE;
       }
       }*/
+
+    //    std::cout << benchmark_find_legal_moves(boards100k) << '\n';
+
+    Board::pre_generate_legal_moves(false);
+    // Check if most of the moves are correct.
+    std::cout << "here\n";
+    for (int i {0}; i < 100; i++) {
+      Board board = boards100k[i];
+      std::cout << board << '\n';
+
+      if (board.legal_moves_new() != board.legal_moves()) {
+	std::cout << "new: ";
+	for (const auto move : board.legal_moves_new()) std::cout << move << ' ';
+	std::cout << '\n';
+	std::cout << "old: ";
+	for (const auto move : board.legal_moves()) std::cout << move << ' ';
+	std::cout << '\n';
+	return EXIT_FAILURE;
+      }
+
+      std::cout << "\n\n";
+    }
+
+    std::cout << "success\n";
 
   } catch (const std::exception &e) {
     std::cerr << e.what();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <iostream>
 #include <cstdint>
 #include <string>
@@ -9,6 +10,7 @@
 #include <fstream>
 #include <exception>
 #include <functional>
+#include <bit>
 
 #include "constants.hpp"
 
@@ -64,6 +66,8 @@ struct Board {
   // To get the next player, just do moves_played & 1.
   uint8_t moves_played {0};
 
+  static std::array<std::array<std::vector<uint8_t>, 512>, 512> moves_table;
+  
   Player next_player () const {
     return static_cast<Player>(moves_played & 1);
   }
@@ -152,6 +156,7 @@ struct Board {
     // If a specific subboard is being forced,
     if (forced_sb < ANY_SUBBOARD) {
       // then add all empty squares that subboard.
+      
       // uint16_t | uint16_t => int.
       const uint16_t subboard {
 	static_cast<uint16_t>
@@ -179,6 +184,26 @@ struct Board {
 	for (size_t s {0}; s < 9; s++) {
 	  if (!(subboard & MOVE_MASKS[s])) moves.push_back({b, s});
 	}
+      }
+    }
+
+    return moves;
+  }
+
+  std::vector<Move> legal_moves_new () const {
+    std::vector<Move> moves {};
+
+    if (forced_sb == ANY_SUBBOARD) {
+      for (size_t b {0}; b < 9; b++) {
+	if (board_completed(b)) continue;
+	
+	for (const auto s : moves_table[subboards[b][to_index(Player::X)]][subboards[b][to_index(Player::O)]]) {
+	  moves.push_back({forced_sb, s});
+	}
+      }
+    } else {
+      for (const auto s : moves_table[subboards[forced_sb][to_index(Player::X)]][subboards[forced_sb][to_index(Player::O)]]) {
+	moves.push_back({forced_sb, s});
       }
     }
 
@@ -219,8 +244,78 @@ struct Board {
       return count_total_empty_squares();
     }
   }
+
+  static void pre_generate_legal_moves (const bool overwrite) {
+    if (!overwrite && std::filesystem::exists("pre-generated-moves")) {
+      std::cout << "loading moves\n";
+      
+      // If the file already exists, it should just be loaded.
+      std::ifstream in {"pre-generated-moves", std::ios::binary};
+
+      if (!in) throw std::runtime_error {"Failed to open file pre-generated-moves"};
+
+      in.read(reinterpret_cast<char*>(&moves_table), MOVES_TABLE_SIZE);
+      return;
+    }
+    
+    // The array takes a subboard (the two different colors as input to the 2d array), and outputs a vector of all the empty positions.
+    // A subboard for a specific color uses 9 bits, so there are 2^9 = 512 different combinations.
+    std::array<std::array<std::vector<uint8_t>, 512>, 512> moves {};
+    
+    std::cout << "generating moves\n";
+    
+    for (uint16_t subboard_a {0}; subboard_a <= FULL_BOARD; subboard_a++) {
+      for (uint16_t subboard_b {0}; subboard_b <= FULL_BOARD; subboard_b++) {
+	// Has a 1 at every taken position on the combined subboard.
+	const uint16_t combined_subboard {static_cast<uint16_t>(subboard_a|subboard_b)};
+
+	// For each square, check if its empty,
+	for (uint8_t s {0}; s < 9; s++) {
+	  // And if so, add it to the list of valid moves.
+	  if (!(combined_subboard & MOVE_MASKS[s])) moves[subboard_a][subboard_b].push_back(s);
+	}
+      }
+    }
+
+    // Store the moves in a file for later use.
+    std::ofstream out {"pre-generated-moves", std::ios::binary};
+    if (!out) throw std::runtime_error {"Failed to open file"};
+    
+    out.write(reinterpret_cast<const char*>(&moves), sizeof(moves));
+    std::cout << sizeof(moves) << '\n';
+  }
 };
+std::array<std::array<std::vector<uint8_t>, 512>, 512> Board::moves_table {};
 static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
+
+void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {
+  std::ofstream out {filename, std::ios::binary | (append ? std::ios::app : std::ios::trunc)};
+  if (!out) throw std::runtime_error {"Failed to open file"};
+
+  out.write(reinterpret_cast<const char*>(board), sizeof(Board) * count);
+}
+
+std::vector<Board> load_positions (const std::string &filename, const size_t count) {
+  // Starting at the end to determine file size.
+  std::ifstream in {filename, std::ios::binary | std::ios::ate};
+  if (!in) throw std::runtime_error {"Failed to open file"};
+
+  std::streamsize size {in.tellg()};
+  // Only boards are stored in the file, so the file size should be a multiple of the board size.
+  if (size % sizeof(Board) != 0) throw std::runtime_error {"Corrupt board file"};
+
+  // Go back to beginning to read data.
+  in.seekg(0);
+
+  // If there aren't enough boards stored.
+  if (count > size/sizeof(Board)) throw std::runtime_error {"Not enough stored board positions"};
+  
+  std::vector<Board> boards(count);
+  
+  in.read(reinterpret_cast<char*>(boards.data()), sizeof(Board) * count);
+
+  return boards;
+}
 
 std::string to_string (const Board &board) {
   // Convert bitboard representation into array of boards.
@@ -302,33 +397,4 @@ std::string to_string (const Board &board) {
 
 std::ostream& operator<< (std::ostream &os, const Board board) {
   return os << to_string(board);
-}
-
-void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {
-  std::ofstream out {filename, std::ios::binary | (append ? std::ios::app : std::ios::trunc)};
-  if (!out) throw std::runtime_error {"Failed to open file"};
-
-  out.write(reinterpret_cast<const char*>(board), sizeof(Board) * count);
-}
-
-std::vector<Board> load_positions (const std::string &filename, const size_t count) {
-  // Starting at the end to determine file size.
-  std::ifstream in {filename, std::ios::binary | std::ios::ate};
-  if (!in) throw std::runtime_error {"Failed to open file"};
-
-  std::streamsize size {in.tellg()};
-  // Only boards are stored in the file, so the file size should be a multiple of the board size.
-  if (size % sizeof(Board) != 0) throw std::runtime_error {"Corrupt board file"};
-
-  // Go back to beginning to read data.
-  in.seekg(0);
-
-  // If there aren't enough boards stored.
-  if (count > size/sizeof(Board)) throw std::runtime_error {"Not enough stored board positions"};
-  
-  std::vector<Board> boards(count);
-  
-  in.read(reinterpret_cast<char*>(boards.data()), sizeof(Board) * count);
-
-  return boards;
 }
