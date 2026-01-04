@@ -11,6 +11,7 @@
 #include <exception>
 #include <functional>
 #include <bit>
+#include <bitset>
 
 #include "constants.hpp"
 
@@ -30,6 +31,17 @@ std::string to_string (const Move move) {
 std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';
 }
+
+struct Move_List {
+  size_t size {};
+  std::array<uint8_t, 9> moves;
+
+  Move_List& push_back (const uint8_t m) {
+    moves[size++] = m;
+
+    return *this;
+  }
+};
 
 // Counts the number of winning moves by the first player on some tic-tac-toe board.
 // Could be a macroboard, or could be a subboard.
@@ -66,7 +78,7 @@ struct Board {
   // To get the next player, just do moves_played & 1.
   uint8_t moves_played {0};
 
-  static std::array<std::array<std::vector<uint8_t>, 512>, 512> moves_table;
+  static std::array<std::array<Move_List, 512>, 512> moves_table;
   
   Player next_player () const {
     return static_cast<Player>(moves_played & 1);
@@ -194,16 +206,24 @@ struct Board {
     std::vector<Move> moves {};
 
     if (forced_sb == ANY_SUBBOARD) {
-      for (size_t b {0}; b < 9; b++) {
-	if (board_completed(b)) continue;
+      for (size_t board {0}; board < 9; board++) {
+	if (board_completed(board)) continue;
 	
-	for (const auto s : moves_table[subboards[b][to_index(Player::X)]][subboards[b][to_index(Player::O)]]) {
-	  moves.push_back({forced_sb, s});
+	const auto x_subboard = subboards[board][to_index(Player::X)];
+	const auto o_subboard = subboards[board][to_index(Player::O)];
+
+	for (size_t i {0}; i < moves_table[x_subboard][o_subboard].size; i++) {
+	  const uint8_t square {moves_table[x_subboard][o_subboard].moves[i]};
+	  moves.push_back({board, square});
 	}
       }
     } else {
-      for (const auto s : moves_table[subboards[forced_sb][to_index(Player::X)]][subboards[forced_sb][to_index(Player::O)]]) {
-	moves.push_back({forced_sb, s});
+      const auto x_subboard = subboards[forced_sb][to_index(Player::X)];
+      const auto o_subboard = subboards[forced_sb][to_index(Player::O)];
+
+      for (size_t i {0}; i < moves_table[x_subboard][o_subboard].size; i++) {
+	const uint8_t square {moves_table[x_subboard][o_subboard].moves[i]};
+	moves.push_back({forced_sb, square});
       }
     }
 
@@ -257,10 +277,10 @@ struct Board {
       in.read(reinterpret_cast<char*>(&moves_table), MOVES_TABLE_SIZE);
       return;
     }
-    
-    // The array takes a subboard (the two different colors as input to the 2d array), and outputs a vector of all the empty positions.
-    // A subboard for a specific color uses 9 bits, so there are 2^9 = 512 different combinations.
-    std::array<std::array<std::vector<uint8_t>, 512>, 512> moves {};
+
+    // The array takes a 9 bit number with a 1 at every occupied square.
+    // A 9 bit number has 2^9 = 512 possible combinations.
+    moves_table = std::array<std::array<Move_List, 512>, 512> {};
     
     std::cout << "generating moves\n";
     
@@ -272,7 +292,7 @@ struct Board {
 	// For each square, check if its empty,
 	for (uint8_t s {0}; s < 9; s++) {
 	  // And if so, add it to the list of valid moves.
-	  if (!(combined_subboard & MOVE_MASKS[s])) moves[subboard_a][subboard_b].push_back(s);
+	  if (!(combined_subboard & MOVE_MASKS[s])) moves_table[subboard_a][subboard_b].push_back(s);
 	}
       }
     }
@@ -281,11 +301,11 @@ struct Board {
     std::ofstream out {"pre-generated-moves", std::ios::binary};
     if (!out) throw std::runtime_error {"Failed to open file"};
     
-    out.write(reinterpret_cast<const char*>(&moves), sizeof(moves));
-    std::cout << sizeof(moves) << '\n';
+    out.write(reinterpret_cast<const char*>(&moves_table), sizeof(moves_table));
+    std::cout << sizeof(moves_table) << '\n';
   }
 };
-std::array<std::array<std::vector<uint8_t>, 512>, 512> Board::moves_table {};
+std::array<std::array<Move_List, 512>, 512> Board::moves_table {};
 static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
 
 void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {
