@@ -1,5 +1,6 @@
 # Generated Files
 out/
+*.ppm
 
 # Java
 java/*.class
@@ -8,6 +9,11 @@ java/*.class
 *~
 .cache/
 compile_commands.json
+
+# Nixos
+.direnv
+.envrc
+shell.nix
 
 # Python
 python/venvs/
