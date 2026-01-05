@@ -4,14 +4,10 @@
 #include <iostream>
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <array>
 #include <vector>
 #include <fstream>
 #include <exception>
-#include <functional>
-#include <bit>
-#include <bitset>
 
 #include "constants.hpp"
 
@@ -32,35 +28,19 @@ std::ostream& operator<< (std::ostream &os, const Move move) {
   return os << '(' << move.subboard << ' ' << move.square << ')';
 }
 
-struct Move_List {
+struct Squares_List {
   size_t size {};
-  std::array<uint8_t, 9> moves;
+  std::array<uint8_t, 9> squares;
 
-  Move_List& push_back (const uint8_t m) {
-    moves[size++] = m;
+  Squares_List& push_back (const uint8_t m) {
+    squares[size++] = m;
 
     return *this;
   }
+
+  uint8_t* begin () {return squares.begin();}
+  uint8_t* end () {return squares.begin() + size;}
 };
-
-// Counts the number of winning moves by the first player on some tic-tac-toe board.
-// Could be a macroboard, or could be a subboard.
-size_t count_winning_moves (const uint16_t a, const uint16_t b) {
-  size_t count {0};
-  // The board of non-empty squares:
-  const uint16_t filled {static_cast<uint16_t>(a | b)};
-  // For each empty square, count the number of two in a rows that correspond to it.
-  for (int s {0}; s < 9; s++) {
-    // If the square is taken, skip it.
-    if (filled & MOVE_MASKS[s]) continue;
-    // Otherwise, check if the two in a rows are being satisfied.
-    for (const uint16_t two_in_a_row : TWO_IN_A_ROWS[s]) {
-      if ((two_in_a_row & a) == two_in_a_row) count++;
-    }
-  }
-
-  return count;
-}
 
 static constexpr uint8_t ANY_SUBBOARD {9};
 struct Board {
@@ -78,7 +58,7 @@ struct Board {
   // To get the next player, just do moves_played & 1.
   uint8_t moves_played {0};
 
-  static std::array<std::array<Move_List, 512>, 512> moves_table;
+  static std::array<Squares_List, 512> empty_squares;
   
   Player next_player () const {
     return static_cast<Player>(moves_played & 1);
@@ -161,69 +141,34 @@ struct Board {
     return false;
   }
 
-  // Returns a vector of all legal moves.
   std::vector<Move> legal_moves () const {
     std::vector<Move> moves {};
 
-    // If a specific subboard is being forced,
-    if (forced_sb < ANY_SUBBOARD) {
-      // then add all empty squares that subboard.
-      
-      // uint16_t | uint16_t => int.
-      const uint16_t subboard {
-	static_cast<uint16_t>
-	(subboards[forced_sb][to_index(Player::X)] |
-	 subboards[forced_sb][to_index(Player::O)])
-      };
-
-      // For each square, check if its empty,
-      for (size_t s {0}; s < 9; s++) {
-	// And if so, add it to the list of valid moves.
-	if (!(subboard & MOVE_MASKS[s])) moves.push_back({forced_sb, s});
-      }
-    } else {
-      // Add all empty squares.
-      // Same as previous, but repeated for all subboards.
-      for (size_t b {0}; b < 9; b++) {
-	if (board_completed(b)) continue;
-      
-	const uint16_t subboard {
-	  static_cast<uint16_t>
-	  (subboards[b][to_index(Player::X)] |
-	   subboards[b][to_index(Player::O)])
-	};
-      
-	for (size_t s {0}; s < 9; s++) {
-	  if (!(subboard & MOVE_MASKS[s])) moves.push_back({b, s});
-	}
-      }
-    }
-
-    return moves;
-  }
-
-  std::vector<Move> legal_moves_new () const {
-    std::vector<Move> moves {};
-
     if (forced_sb == ANY_SUBBOARD) {
-      for (size_t board {0}; board < 9; board++) {
-	if (board_completed(board)) continue;
-	
-	const auto x_subboard = subboards[board][to_index(Player::X)];
-	const auto o_subboard = subboards[board][to_index(Player::O)];
+      // Iterate over each non-completed subboard.
+      auto empty_subboards = empty_squares[macroboards[0] | macroboards[1] | macroboards[2]];
+      // Maximum number of possible moves.
+      moves.reserve(empty_subboards.size * 9);
+      for (const uint8_t board_i : empty_subboards) {
+	const auto x_subboard = subboards[board_i][to_index(Player::X)];
+	const auto o_subboard = subboards[board_i][to_index(Player::O)];
+	const auto &move_list = empty_squares[x_subboard | o_subboard];
 
-	for (size_t i {0}; i < moves_table[x_subboard][o_subboard].size; i++) {
-	  const uint8_t square {moves_table[x_subboard][o_subboard].moves[i]};
-	  moves.push_back({board, square});
+	for (size_t i {0}; i < move_list.size; i++) {
+	  const uint8_t square_i {move_list.squares[i]};
+	  moves.push_back({board_i, square_i});
 	}
       }
     } else {
       const auto x_subboard = subboards[forced_sb][to_index(Player::X)];
       const auto o_subboard = subboards[forced_sb][to_index(Player::O)];
+      const auto &move_list = empty_squares[x_subboard | o_subboard];
 
-      for (size_t i {0}; i < moves_table[x_subboard][o_subboard].size; i++) {
-	const uint8_t square {moves_table[x_subboard][o_subboard].moves[i]};
-	moves.push_back({forced_sb, square});
+      moves.reserve(empty_squares[x_subboard | o_subboard].size);
+
+      for (size_t i {0}; i < move_list.size; i++) {
+	const uint8_t square_i {move_list.squares[i]};
+	moves.push_back({forced_sb, square_i});
       }
     }
 
@@ -238,15 +183,14 @@ struct Board {
       (subboards[subboard][to_index(Player::X)] |
        subboards[subboard][to_index(Player::O)])
     };
-    // Count number of 0s.
-    // There are 9 bits being used, and the number of 0s would be 9 minus the number of 1s.
-    return 9 - std::popcount(full_subboard);
+
+    return empty_squares[full_subboard].size;
   }
   
   // Total empty squares in the entire board.
   size_t count_total_empty_squares () const {
     size_t count {0};
-    
+
     for (size_t b {0}; b < 9; b++) {
       // If the board has been completed, skip it.
       if (board_completed(b)) continue;
@@ -274,25 +218,22 @@ struct Board {
 
       if (!in) throw std::runtime_error {"Failed to open file pre-generated-moves"};
 
-      in.read(reinterpret_cast<char*>(&moves_table), MOVES_TABLE_SIZE);
+      in.read(reinterpret_cast<char*>(&empty_squares), EMPTY_SQUARES_SIZE);
       return;
     }
 
     // The array takes a 9 bit number with a 1 at every occupied square.
     // A 9 bit number has 2^9 = 512 possible combinations.
-    moves_table = std::array<std::array<Move_List, 512>, 512> {};
+    empty_squares = std::array<Squares_List, 512> {};
     
     std::cout << "generating moves\n";
     
-    for (uint16_t subboard_a {0}; subboard_a <= FULL_BOARD; subboard_a++) {
-      for (uint16_t subboard_b {0}; subboard_b <= FULL_BOARD; subboard_b++) {
-	// Has a 1 at every taken position on the combined subboard.
-	const uint16_t combined_subboard {static_cast<uint16_t>(subboard_a|subboard_b)};
-
-	// For each square, check if its empty,
-	for (uint8_t s {0}; s < 9; s++) {
-	  // And if so, add it to the list of valid moves.
-	  if (!(combined_subboard & MOVE_MASKS[s])) moves_table[subboard_a][subboard_b].push_back(s);
+    for (uint16_t subboard {0}; subboard <= FULL_BOARD; subboard++) {
+      // For each square, check if its empty,
+      for (uint8_t s {0}; s < 9; s++) {
+	// And if so, add it to the list of valid moves.
+	if (!(subboard & MOVE_MASKS[s])) {
+	  empty_squares[subboard].push_back(s);
 	}
       }
     }
@@ -301,11 +242,11 @@ struct Board {
     std::ofstream out {"pre-generated-moves", std::ios::binary};
     if (!out) throw std::runtime_error {"Failed to open file"};
     
-    out.write(reinterpret_cast<const char*>(&moves_table), sizeof(moves_table));
-    std::cout << sizeof(moves_table) << '\n';
+    out.write(reinterpret_cast<const char*>(&empty_squares), sizeof(empty_squares));
+    //    std::cout << sizeof(empty_squares) << '\n';
   }
 };
-std::array<std::array<Move_List, 512>, 512> Board::moves_table {};
+std::array<Squares_List, 512> Board::empty_squares {};
 static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
 
 void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {

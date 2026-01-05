@@ -5,7 +5,7 @@
 #include <array>
 #include <vector>
 
-constexpr size_t MOVES_TABLE_SIZE {6'291'456};
+constexpr size_t EMPTY_SQUARES_SIZE {12'288};
 
 constexpr std::array<uint16_t, 8> WIN_MASKS {
   // Horizontal
