@@ -75,11 +75,11 @@ struct Benchmark_Result {
 };
 
 std::ostream& operator<< (std::ostream &os, const Benchmark_Result &res) {
-  os << "{\n";
-  os << "    " << res.name << " played " << res.positions << " positions in " << res.ms << " milliseconds\n";
-  os << "    " << res.ms_per_position << " ms per position\n";
-  os << "    searched " << res.nodes << " nodes and pruned " << res.cutoffs << " times\n";
-  os << "    " << res.ms_per_node << " ms per node\n";
+  os << "{" << std::endl;
+  os << "    " << res.name << " played " << res.positions << " positions in " << res.ms << " milliseconds" << std::endl;
+  os << "    " << res.ms_per_position << " ms per position" << std::endl;
+  os << "    searched " << res.nodes << " nodes and pruned " << res.cutoffs << " times" << std::endl;
+  os << "    " << res.ms_per_node << " ms per node" << std::endl;
   os << "}";
   return os;
 };
@@ -159,7 +159,7 @@ Benchmark_Result benchmark_find_legal_moves (std::span<Board> positions) {
   double ms {std::chrono::duration<double, std::milli>(end - start).count()};
 
   return Benchmark_Result {
-    .name = "is_legal",
+    .name = "legal_moves",
     .positions = positions.size(),
     .nodes = 0,
     .cutoffs = 0,
