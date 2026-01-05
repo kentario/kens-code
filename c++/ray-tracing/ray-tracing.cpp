@@ -105,6 +105,8 @@ int main () {
   std::cout << "Combining shapes...\n";
   std::vector<Shape*> shapes;
 
+  shapes.push_back(new Sphere {Material {0, {0.47, 0.79, 0.17}, {1, 0.8, 0.8}, 1}, {45, -25, 0}, 2});
+  
   for (auto &sphere : spheres) {
     shapes.push_back(&sphere);
   }
@@ -121,14 +123,14 @@ int main () {
   Vector3 origin {0, 0, 0};
   Vector3 look_direction {1, 0, 0};
   double horizontal_fov {110};
-  int horizontal_resolution {800};
-  int vertical_resolution {800};
-  int num_bounces {5};
+  int horizontal_resolution {1000};
+  int vertical_resolution {1000};
+  int num_bounces {10};
   Camera my_camera {origin, look_direction, horizontal_fov, horizontal_resolution, vertical_resolution, num_bounces, shapes};
 
   std::cout << "Taking pictures...\n";
 
-  int num_samples {15};
+  int num_samples {40};
   std::vector<std::vector<std::vector<Vector3>>> pictures(num_samples);
 
   for (int i {0}; i < num_samples; i++) {
