@@ -55,8 +55,8 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
   while (!board.terminal()) {
     //    std::cout << board << '\n';
     //    auto start = std::chrono::steady_clock::now();
-    if (board.next_player() == Player::X) move = (*p0)(board);
-    else move = (*p1)(board);
+    if (board.next_player() == Player::X) move = p0->pick_move(board);
+    else move = p1->pick_move(board);
     //    auto end = std::chrono::steady_clock::now();
     //    if (std::chrono::duration<double, std::milli>(end - start).count() > 500) {
     //      save_positions("long position", &board, 1, true);

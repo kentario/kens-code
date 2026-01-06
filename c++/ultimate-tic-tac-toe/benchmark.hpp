@@ -40,7 +40,7 @@ Board random_position (std::mt19937 &rng, const bool terminal_allowed, const siz
     for (; moves_played < target_num_moves; moves_played++) {
       if (board.terminal()) break;
 
-      const Move move {r(board)};
+      const Move move {r.pick_move(board)};
       
       if (!board.play_move(move)) {
 	const std::string msg {
@@ -88,7 +88,7 @@ Benchmark_Result benchmark_bot_move_generation (Bot &bot, std::span<Board> posit
   auto start = std::chrono::steady_clock::now();
 
   for (const auto &p : positions) {
-    volatile Move m __attribute__((unused)) {bot(p)};
+    volatile Move m __attribute__((unused)) {bot.pick_move(p)};
   }
   
   auto end = std::chrono::steady_clock::now();
@@ -109,7 +109,7 @@ Benchmark_Result benchmark_bot_nodes (Bot &bot, std::span<Board> positions) {
   auto start = std::chrono::steady_clock::now();
 
   for (const auto &p : positions) {
-    volatile Move m __attribute__((unused)) {bot(p)};
+    volatile Move m __attribute__((unused)) {bot.pick_move(p)};
   }
   
   auto end = std::chrono::steady_clock::now();
