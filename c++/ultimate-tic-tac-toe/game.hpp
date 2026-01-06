@@ -8,6 +8,8 @@
 #include <vector>
 #include <fstream>
 #include <exception>
+#include <span>
+#include <string_view>
 
 #include "constants.hpp"
 
@@ -256,6 +258,12 @@ void save_positions (const std::string &filename, const Board board[], const siz
   out.write(reinterpret_cast<const char*>(board), sizeof(Board) * count);
 }
 
+void update_translate_index (std::span<size_t> translate_index, const size_t inserted_location, std::string_view str) {
+  for (size_t i {inserted_location + 1}; i < translate_index.size(); i++) {
+    translate_index[i] += str.size();
+  }
+}
+
 std::vector<Board> load_positions (const std::string &filename, const size_t count) {
   // Starting at the end to determine file size.
   std::ifstream in {filename, std::ios::binary | std::ios::ate};
@@ -280,12 +288,15 @@ std::vector<Board> load_positions (const std::string &filename, const size_t cou
 
 std::string to_string (const Board &board) {
   // Convert bitboard representation into array of boards.
+  // Winner of each subboard.
   std::array<int, 9> state {};
   for (int i {0}; i < 9; i++) {
     if (board.macroboards[0] & MOVE_MASKS[i]) state[i] = 1;
     else if (board.macroboards[1] & MOVE_MASKS[i]) state[i] = -1;
   }
 
+  // The pieces in the entire board.
+  // board_array[subboard][square]
   std::array<std::array<int, 9>, 9> board_array {};
   for (int b {0}; b < 9; b++) {
     for (int s {0}; s < 9; s++) {
@@ -299,9 +310,13 @@ std::string to_string (const Board &board) {
 
   for (int row {0}; row < 9; row++) {
     for (int col {0}; col < 9; col++) {
-      const int v {board_array[(col/3) + (row/3) * 3][(col % 3) + (row % 3) * 3]};
+      const int subboard {(col/3) + (row/3) * 3};
+      const int square {(col % 3) + (row % 3) * 3};
+
+      const int v {board_array[subboard][square]};
+
       res += v > 0 ? 'X' : (v < 0 ? 'O' : ' ');
-      
+
       if (col != 8) {
 	if (col % 3 == 2) {
 	  res += "  ||  ";
@@ -325,21 +340,22 @@ std::string to_string (const Board &board) {
   // For each winning subboard, make a big version of the shape on top.
   const std::string big_x {"\\   /                        \\ /                          X                          / \\                        /   \\"};
   const std::string big_o {" /^\\                        |   |                       |   |                       |   |                        \\_/ "};
-  size_t top_left = 0;
+  size_t top_left {0};
   for (size_t i {0}; i < 9; i++) {
+    // The state of the current subboard.
     const int s {state[i]};
     
     switch (s) {
-    case 0:
+    case 0: // Uncompleted/draw
       break;
-    case 1:
+    case 1: // X won
       for (size_t j {0}; j < big_x.size(); j++) {
 	if (j % 28 < 5) {
 	  res[top_left + j] = big_x[j];
 	}
       }
       break;
-    case -1:
+    case -1: // O won
       for (size_t j {0}; j < big_o.size(); j++) {
 	if (j % 28 < 5) {
 	  res[top_left + j] = big_o[j];
@@ -350,6 +366,62 @@ std::string to_string (const Board &board) {
     top_left += 11;
     if (i % 3 == 2) {
       top_left += 205;
+    }
+  }
+
+  // Highlight the forced subboard.
+  /*
+    For testing different colors
+    for i in {30..37}; do echo -e "\033[1;$i""mcolorful text\033[0m"; done
+  */
+  const std::string highlight_start {"\033[1;36m"};
+  const std::string highlight_end {"\033[0m"};
+  //  const std::string highlight_start {"s"};
+  //  const std::string highlight_end {"e"};
+
+  Squares_List subboards_todo {};
+  if (board.forced_sb == 9) {
+    subboards_todo = Board::empty_squares[board.macroboards[0] | board.macroboards[1] | board.macroboards[2]];
+  } else {
+    subboards_todo.push_back(board.forced_sb);
+  }
+
+  constexpr size_t original_res_size {615};
+  // + 1 because insertions can happen at index 0 but also at index size() to go at the very end.
+  std::array<size_t, original_res_size + 1> translate_index {};
+  for (size_t i {0}; i < translate_index.size(); i++) {
+    translate_index[i] = i;
+  }
+  
+  // For each empty subboard,
+  for (const uint8_t subboard_i : subboards_todo) {
+    // Horizontal offset
+    top_left = 11 * (subboard_i % 3);
+    // If the subboard is in a lower row, the borders between rows must be skipped.
+    top_left += (subboard_i/3) * 238;
+
+    const size_t row_size {28};
+
+    for (int row_offset {0}; row_offset <= 4; row_offset++) {
+      size_t start_position_before {
+	// Start
+	top_left
+	// + rows alrady done
+	+ row_offset * row_size
+      };
+      res.insert(translate_index[start_position_before], highlight_start);
+      update_translate_index(translate_index, start_position_before, highlight_start);
+      
+      size_t end_position_before {
+	// Start
+	top_left
+	// + rows already done
+	+ row_offset * row_size
+	// + distance between start and end of highlight.
+	+ 5
+      };
+      res.insert(translate_index[end_position_before], highlight_end);
+      update_translate_index(translate_index, end_position_before, highlight_end);
     }
   }
 
