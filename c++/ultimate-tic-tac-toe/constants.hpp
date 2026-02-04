@@ -122,3 +122,7 @@ enum class Game_Result {
   PLAYER1_WIN,
   DRAW
 };
+
+constexpr double WIN {1e5};
+constexpr double LOSS {-1e5};
+constexpr double DRAW {0};

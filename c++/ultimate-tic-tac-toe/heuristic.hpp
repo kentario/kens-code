@@ -29,11 +29,11 @@ size_t count_winning_moves (const uint16_t a, const uint16_t b) {
 #define HEURISTIC_BEGINNING						\
   /* Checkin for a win */						\
   for (const auto mask : WIN_MASKS) {					\
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -100'000; \
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return  100'000; \
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return LOSS; \
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return WIN; \
   }									\
   /* Checking for a draw. Draw if if all boards have been completed. */	\
-  if ((board.macroboards[to_index(Player::X)] | board.macroboards[to_index(Player::O)] | board.macroboards[2]) == FULL_BOARD) return 0;
+  if ((board.macroboards[to_index(Player::X)] | board.macroboards[to_index(Player::O)] | board.macroboards[2]) == FULL_BOARD) return DRAW;
 
 // Constants that are used in heuristics.
 // Initialized with values chosen by me that seemed ok.
@@ -80,10 +80,10 @@ double subboard_values_simple (const Board &board, const Eval_Params &params) {
 
 // Returns 1 if max has won, -1 if min has won, and 0 otherwise.
 // Only call if you know someone has won.
-int check_winner (const Board &board) {
+int check_winner (const Board &board, const size_t ply) {
   for (const auto mask : WIN_MASKS) {
-    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return -1;
-    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return 1;
+    if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) return LOSS + ply;
+    if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) return WIN - ply;
   }
 
   return 0;
