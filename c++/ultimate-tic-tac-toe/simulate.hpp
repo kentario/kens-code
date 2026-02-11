@@ -53,7 +53,7 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
   Move move {};
 
   while (!board.terminal()) {
-    //    std::cout << board << '\n';
+    //    std::cout << board << "\n\n";
     //    auto start = std::chrono::steady_clock::now();
     if (board.next_player() == Player::X) move = p0->pick_move(board);
     else move = p1->pick_move(board);
@@ -195,7 +195,6 @@ Tournament simulate (const std::span<Bot* const> bots, const size_t games_per_pa
   std::mt19937 seed_rng {std::random_device{}()};
   Tournament tournament {};
 
-  //  std::cout << "starting\n";
   for (const auto &a : bots) {
     for (const auto &b : bots) {
       std::cout << "starting games for " << a->get_name() << " vs " << b->get_name() << '\n';

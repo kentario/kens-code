@@ -11,82 +11,124 @@
 #include "simulate.hpp"
 #include "benchmark.hpp"
 
+std::string trim_space (const std::string &str) {
+  size_t i {0};
+  for (; str[i] == ' ' && i < str.size(); i++);
+  return str.substr(i);
+}
+
+template <Heuristic H>
+void play_game_with_player (Negamax<H> *bot, const size_t full_search_threshold, const Player player, Board &board) {
+  for (int i {0}; !board.terminal(); i++) {
+    std::cout << board << '\n';
+    Move move {};
+    std::cout << board.next_player() << " to play\n";
+    if (board.next_player() == player) {
+      std::cout << "player to play\n";
+      std::string input;
+      std::getline(std::cin, input);
+
+      if (input.starts_with("save")) {
+	save_positions(trim_space(input.substr(4)), &board, 1, false);
+	break;
+      } else {
+	move.subboard = std::atoi(input.data());
+	move.square = std::atoi(input.data() + 1);
+      }
+    } else {
+      std::cout << "bot to play\n";
+      if (board.count_total_empty_squares() <= full_search_threshold) {
+	std::cout << "trying full search\n";
+	move = bot->pick_move_full(board);
+      } else {
+	move = bot->pick_move(board);
+      }
+    }
+
+    std::cout << "playing move " << move << '\n';
+    if (!board.play_move(move)) {
+      std::cout << "Illegal move\n";
+      if (board.next_player() != player) {
+	// if it was the bot, don't try again.
+	save_positions("bot-fail", &board, 1, false);
+	break;
+      } else {
+	// wasn't bot. try again.
+	std::cout << "try again\n";
+	i--;
+      }
+    }
+  }
+
+  std::cout << board << '\n';
+}
+
 int main () {
   try {
+    Board::pre_generate_legal_moves(false);
     std::mt19937 rng {};
     // std::array<Board, 100'000> boards {};
     // for (Board &b : boards) {
     //   b = random_position(rng, false);
     // }
     // save_positions("positions-100k", boards.data(), boards.size(), false);
-    
+
     //TODO SOMEWHERE ELSE
     // make a function to check if the current position will just result in a draw
-    // todo
-    // pregenerate legal moves for all possible subboards.
-    
+
     std::vector boards100k {load_positions("positions-100k", 100'000)};
-    
-    std::array<Board, 1000> boards {};
-    for (int i {0}; i < 1'000; i++) {
-      boards[i] = random_position(rng, false, 10, 81);
-    }
-    std::sort(boards.begin(), boards.end(), [](const Board &a, const Board &b) {
-      return a.count_total_empty_squares() > b.count_total_empty_squares();
-    });
+    std::cout << "done\n";
 
-    Minimax m {"minimax", 5, Eval_Params {}, &heur2, rng()};
-    Negamax n {"negamax", 5, Eval_Params {}, &heur2, rng()};
-
-    //    std::cout << benchmark_bot_move_generation(m, boards100k);
-    //    std::cout << benchmark_bot_move_generation(n, boards100k);
-    
-    /*4
-    Minimax_Full b {"test", 1, Eval_Params {}, &heur1, true, rng()};
-    //for checking minimaxfull efficiency/validity.
-    for (int i {999}; i >= 0; i--) {
-      std::cout << i << '\n';
-      std::cout << role(boards[i].next_player()) << " to play\n";
-      std::cout << boards[i] << "\n";
-      std::cout << "there are " << boards[i].count_total_empty_squares() << " empty squares in the board\n";
-      auto m = b(boards[i]);
-      std::cout << m << "\n\n\n";
-      if (!boards[i].is_legal(m)) {
-	std::cerr << "super bad stuff";
-	std::cerr << i << " " << m;
-	return EXIT_FAILURE;
+    // For debugging a specific position
+    /*
+      Board board {};
+      Move moves[] {
+      {0, 0}, {0, 1}, {1, 0}, {0, 2}, {2, 0}, {0, 3}, {3, 0}, {0, 4}, {4, 4}, {4, 0}, {0, 8}, {8, 0}, {0, 7}, {7, 1}, {1, 1}, {1, 2}, {2, 2}, {2, 1}, {1, 4}, {4, 2}, {2, 4}, {4, 1}, {1, 7}, {7, 0}
+    };
+    for (auto m : moves) {
+      if (!board.play_move(m)) {
+	std::cout << m << '\n';
+	std::cout << "problem\n";
+	break;
       }
-      }*/
-
-    //    std::cout << benchmark_find_legal_moves(boards100k) << '\n';
-
-    Board::pre_generate_legal_moves(false);
-    // Check if most of the moves are correct.
-    std::cout << "here\n";
-    for (int i {0}; i < 100; i++) {
-      Board board = boards100k[i];
-      std::cout << board << '\n';
-
-      if (board.legal_moves_new() != board.legal_moves()) {
-	std::cout << "new: ";
-	for (const auto move : board.legal_moves_new()) std::cout << move << ' ';
-	std::cout << '\n';
-	std::cout << "old: ";
-	for (const auto move : board.legal_moves()) std::cout << move << ' ';
-	std::cout << '\n';
-	return EXIT_FAILURE;
-      }
-
-      std::cout << "\n\n";
     }
+*/
+    //Negamax bot_n {"negamax", 11, Eval_Params {}, &heur4, rng()};
+    //play_game_with_player(&bot_n, 22, Player::X, board);
+    //    play_game(&bot_n, &bot_n, rng());
 
-    std::cout << "success\n";
+    //    Negamax n {"heur", 5, Eval_Params {}, &heur2, rng()};
+    //    std::cout << benchmark_bot_move_generation(n, boards100k) << '\n';
+    std::vector<Bot*> bots;
+    bots.push_back(new Negamax("5h1", 5, Eval_Params {}, &heur1, rng()));
+    bots.push_back(new Negamax("5h2", 5, Eval_Params {}, &heur2, rng()));
+    bots.push_back(new Negamax("5h3", 5, Eval_Params {}, &heur3, rng()));
+    bots.push_back(new Negamax("5h4", 5, Eval_Params {}, &heur4, rng()));
+    bots.push_back(new Negamax("6h1", 6, Eval_Params {}, &heur1, rng()));
+    bots.push_back(new Negamax("6h2", 6, Eval_Params {}, &heur2, rng()));
+    bots.push_back(new Negamax("6h3", 6, Eval_Params {}, &heur3, rng()));
+    bots.push_back(new Negamax("6h4", 6, Eval_Params {}, &heur4, rng()));
+    bots.push_back(new Negamax("7h1", 7, Eval_Params {}, &heur1, rng()));
+    bots.push_back(new Negamax("7h2", 7, Eval_Params {}, &heur2, rng()));
+    bots.push_back(new Negamax("7h3", 7, Eval_Params {}, &heur3, rng()));
+    bots.push_back(new Negamax("7h4", 7, Eval_Params {}, &heur4, rng()));
+
+    std::cout << simulate(bots, 100) << '\n';
+    
+    Negamax full {"7h4", 7, Eval_Params {}, &heur4, rng()};
+    Negamax_Ordered full_ordered {"7h4-2h2", 7, Eval_Params {}, &heur4, &heur2, 2, rng()};
+    
+    //    test_full_search(rng, full_ordered);
+    // std::cout << benchmark_heuristic(&heur1, "heur1", boards100k) << '\n';
+    // std::cout << benchmark_heuristic(&heur2, "heur2", boards100k) << '\n';
+    // std::cout << benchmark_heuristic(&heur3, "heur3", boards100k) << '\n';
+    // std::cout << benchmark_heuristic(&heur4, "heur4", boards100k) << '\n';
 
   } catch (const std::exception &e) {
     std::cerr << e.what();
-    
+
     return EXIT_FAILURE;
   }
-  
+
   return 0;
 }
