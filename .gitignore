@@ -1,5 +1,6 @@
 # Generated Files
 out/
+build/
 *.ppm
 
 # Java

@@ -5,11 +5,12 @@
 #include <array>
 #include <vector>
 
+#include "bots.hpp"
 #include "heuristic.hpp"
 #include "game.hpp"
-#include "bots.hpp"
 #include "simulate.hpp"
 #include "benchmark.hpp"
+#include "tune.hpp"
 
 std::string trim_space (const std::string &str) {
   size_t i {0};
@@ -116,9 +117,8 @@ int main () {
     std::cout << simulate(bots, 100) << '\n';
     
     Negamax full {"7h4", 7, Eval_Params {}, &heur4, rng()};
-    Negamax_Ordered full_ordered {"7h4-2h2", 7, Eval_Params {}, &heur4, &heur2, 2, rng()};
     
-    //    test_full_search(rng, full_ordered);
+    //    test_full_search(rng, full);
     // std::cout << benchmark_heuristic(&heur1, "heur1", boards100k) << '\n';
     // std::cout << benchmark_heuristic(&heur2, "heur2", boards100k) << '\n';
     // std::cout << benchmark_heuristic(&heur3, "heur3", boards100k) << '\n';
