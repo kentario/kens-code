@@ -192,7 +192,7 @@ void Board::pre_generate_legal_moves (const bool overwrite) {
     // If the file already exists, it should just be loaded.
     std::ifstream in {"pre-generated-moves", std::ios::binary};
 
-    if (!in) throw std::runtime_error {"Failed to open file pre-generated-moves"};
+    if (!in) throw std::runtime_error {"pre_generate_legal_moves failed to open file pre-generated-moves"};
 
     in.read(reinterpret_cast<char*>(&empty_squares), EMPTY_SQUARES_SIZE);
     return;
@@ -216,7 +216,7 @@ void Board::pre_generate_legal_moves (const bool overwrite) {
 
   // Store the moves in a file for later use.
   std::ofstream out {"pre-generated-moves", std::ios::binary};
-  if (!out) throw std::runtime_error {"Failed to open file"};
+  if (!out) throw std::runtime_error {"pre_generate_legal_moves failed to open file pre-generated-moves"};
     
   out.write(reinterpret_cast<const char*>(&empty_squares), sizeof(empty_squares));
   //    std::cout << sizeof(empty_squares) << '\n';
@@ -224,7 +224,7 @@ void Board::pre_generate_legal_moves (const bool overwrite) {
 
 void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append) {
   std::ofstream out {filename, std::ios::binary | (append ? std::ios::app : std::ios::trunc)};
-  if (!out) throw std::runtime_error {"Failed to open file"};
+  if (!out) throw std::runtime_error {"save_positions failed to open file " + filename};
 
   out.write(reinterpret_cast<const char*>(board), sizeof(Board) * count);
 }
@@ -238,7 +238,7 @@ void update_translate_index (std::span<size_t> translate_index, const size_t ins
 std::vector<Board> load_positions (const std::string &filename, const size_t count) {
   // Starting at the end to determine file size.
   std::ifstream in {filename, std::ios::binary | std::ios::ate};
-  if (!in) throw std::runtime_error {"Failed to open file"};
+  if (!in) throw std::runtime_error {"load_positions failed to open file " + filename};
 
   std::streamsize size {in.tellg()};
   // Only boards are stored in the file, so the file size should be a multiple of the board size.
