@@ -11,6 +11,7 @@ Bot::Bot (const std::string &name) :
 
 // Would clear anything cached and other stuff, and also sets the seed.
 void Bot::reset (const uint64_t) {}
+void Bot::set_params (const Eval_Params &new_params) {}
 std::string Bot::get_name () const { return name; }
 
 Random::Random (const std::string &name, const uint64_t seed) :

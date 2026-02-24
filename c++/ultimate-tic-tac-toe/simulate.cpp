@@ -38,7 +38,7 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
 
   p0->reset(seed);
   p1->reset(seed);
-	       
+
   Board board {};
   Move move {};
 
@@ -54,7 +54,7 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
     //    }
     //    std::cout << board.count_total_empty_squares() << " empty squares\n";
     //    std::cout << "chosen move " << move << '\n';
-     
+
     if (!board.play_move(move)) {
       const std::string msg {
 	to_string(move) +
@@ -66,7 +66,7 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
 	to_string(board) +
 	"\n"
       };
-      
+
       throw std::domain_error {msg};
     }
 
@@ -79,7 +79,7 @@ Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
     if ((mask & board.macroboards[to_index(Role::MIN)]) == mask) game.result = Game_Result::PLAYER0_WIN;
     if ((mask & board.macroboards[to_index(Role::MAX)]) == mask) game.result = Game_Result::PLAYER1_WIN;
   }
-  
+
   return game;
 }
 

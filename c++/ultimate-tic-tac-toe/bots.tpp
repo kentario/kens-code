@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <random>
 #include <array>
 #include <span>
@@ -14,28 +15,28 @@
 #include "game.hpp"
 #include "heuristic.hpp"
 
-template <Heuristic H>
-Minimax<H>::Minimax (const std::string &name, const size_t max_depth,
+template <size_t max_depth, Heuristic H>
+Minimax<max_depth, H>::Minimax (const std::string &name,
 		     const Eval_Params &params, const H &eval,
 		     const uint64_t seed) :
-  Bot {name}, max_depth {max_depth},
+  Bot {name},
   params {params}, eval {eval},
   rng {seed} {}
 
-template <Heuristic H>
-void Minimax<H>::reset (const uint64_t seed) {
+template <size_t max_depth, Heuristic H>
+void Minimax<max_depth, H>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
   params = Eval_Params {};
 }
 
-template <Heuristic H>
-void Minimax<H>::set_params (const Eval_Params &new_params) {
+template <size_t max_depth, Heuristic H>
+void Minimax<max_depth, H>::set_params (const Eval_Params &new_params) {
   params = new_params;
 }
 
-template <Heuristic H>
-double Minimax<H>::minimax (const Board &board, size_t depth, double alpha, double beta) {
+template <size_t max_depth, Heuristic H>
+double Minimax<max_depth, H>::minimax (const Board &board, size_t depth, double alpha, double beta) {
   stats.nodes++;
   if (board.terminal() || depth <= 0) return eval(board, params);
 
@@ -72,8 +73,8 @@ double Minimax<H>::minimax (const Board &board, size_t depth, double alpha, doub
   return value;
 }
 
-template <Heuristic H>
-Move Minimax<H>::pick_move (const Board &board) {
+template <size_t max_depth, Heuristic H>
+Move Minimax<max_depth, H>::pick_move (const Board &board) {
   if (board.terminal()) return {9, 9};
   std::vector<Move> moves {board.legal_moves()};
 
@@ -94,28 +95,28 @@ Move Minimax<H>::pick_move (const Board &board) {
   return moves[best_move.first];
 }
 
-template <Heuristic H>
-Negamax<H>::Negamax (const std::string &name, const size_t max_depth,
-	 const Eval_Params &params, const H &eval,
-	 const uint64_t seed) :
-  Bot {name}, max_depth {max_depth},
+template <size_t max_depth, Heuristic H>
+Negamax<max_depth, H>::Negamax (const std::string &name,
+		     const Eval_Params &params, const H &eval,
+		     const uint64_t seed) :
+  Bot {name},
   params {params}, eval {eval},
   rng {seed} {}
 
-template <Heuristic H>
-void Negamax<H>::reset (const uint64_t seed) {
+template <size_t max_depth, Heuristic H>
+void Negamax<max_depth, H>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
   params = Eval_Params {};
 }
 
-template <Heuristic H>
-void Negamax<H>::set_params (const Eval_Params &new_params) {
+template <size_t max_depth, Heuristic H>
+void Negamax<max_depth, H>::set_params (const Eval_Params &new_params) {
   params = new_params;
 }
 
-template <Heuristic H>
-double Negamax<H>::negamax (const Board &board, size_t depth, double alpha, double beta) {
+template <size_t max_depth, Heuristic H>
+double Negamax<max_depth, H>::negamax (const Board &board, size_t depth, double alpha, double beta) {
   stats.nodes++;
   // Always returns from the perspective of the current player.
   // Multiplies by -1 if the player is min, as then small (good) numbers become big.
@@ -133,12 +134,12 @@ double Negamax<H>::negamax (const Board &board, size_t depth, double alpha, doub
       break;
     }
   }
-    
+
   return value;
 }
 
-template <Heuristic H>
-Move Negamax<H>::pick_move (const Board &board) {
+template <size_t max_depth, Heuristic H>
+Move Negamax<max_depth, H>::pick_move (const Board &board) {
   if (board.terminal()) return {9, 9};
 
   std::vector<Move> moves {board.legal_moves()};
@@ -149,17 +150,17 @@ Move Negamax<H>::pick_move (const Board &board) {
   std::pair<size_t, double> best_move {-1, -DBL_MAX};
   for (size_t i {0}; i < moves.size(); i++) {
     double value {-negamax(board.play_move_unsafe_value(moves[i]), max_depth - 1, -DBL_MAX, DBL_MAX)};
-      
+
     //      std::cout << moves[i] << ": " << value << '\n';
 
     if (value > best_move.second) best_move = {i, value};
   }
-    
+
   return moves[best_move.first];
 }
 
-template <Heuristic H>
-double Negamax<H>::full_search (const Board &board, const size_t ply, double alpha, double beta) {
+template <size_t max_depth, Heuristic H>
+double Negamax<max_depth, H>::full_search (const Board &board, const size_t ply, double alpha, double beta) {
   // ply is the distance to the root node.
   stats.nodes++;
   if (board.terminal()) return check_winner(board, ply) * sign(board.next_player());
@@ -179,8 +180,8 @@ double Negamax<H>::full_search (const Board &board, const size_t ply, double alp
   return value;
 }
 
-template <Heuristic H>
-Move Negamax<H>::pick_move_full (const Board &board) {
+template <size_t max_depth, Heuristic H>
+Move Negamax<max_depth, H>::pick_move_full (const Board &board) {
   if (board.terminal()) return {9, 9};
 
   std::vector<Move> moves {board.legal_moves()};

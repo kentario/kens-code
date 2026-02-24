@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include <type_traits>
 #include <random>
 #include <functional>
 #include <array>
@@ -32,11 +33,12 @@ public:
   virtual ~Bot () = default;
 
   // Returns the move that it wants to play
-  virtual Move pick_move (const Board &board) = 0;
-
   // Would clear anything cached and other stuff, and also sets the seed.
   virtual void reset (const uint64_t seed = 0);
+  virtual void set_params (const Eval_Params &new_params);
   
+  virtual Move pick_move (const Board &board) = 0;
+
   std::string get_name () const;
 };
 
@@ -53,45 +55,48 @@ public:
   Random (const std::string &name, const uint64_t seed = 0);
   
   void reset (const uint64_t seed = 0) override;
+
   virtual Move pick_move (const Board &board) override;
 };
 
-template <Heuristic H>
+template <size_t max_depth, Heuristic H>
 class Minimax : public Bot {
 protected:
-  const size_t max_depth;
+  using Fn = std::decay_t<H>;
+  
   Eval_Params params;
-  const H eval;
+  const Fn eval;
   std::mt19937 rng;
 
 public:
-  Minimax (const std::string &name, const size_t max_depth,
+  Minimax (const std::string &name,
 	   const Eval_Params &params, const H &eval,
 	   const uint64_t seed = 0);
 
   void reset (const uint64_t seed = 0) override;
-  void set_params (const Eval_Params &new_params);
+  void set_params (const Eval_Params &new_params) override;
   
   double minimax (const Board &board, size_t depth, double alpha, double beta);
   Move pick_move (const Board &board) override;
 };
 
-template <Heuristic H>
+template <size_t max_depth, Heuristic H>
 class Negamax : public Bot {
 protected:
-  const size_t max_depth;
+  using Fn = std::decay_t<H>;
+  
   Eval_Params params;
-  const H eval;
+  const Fn eval;
   std::mt19937 rng;
 
 public:
-  Negamax (const std::string &name, const size_t max_depth,
+  Negamax (const std::string &name,
 	   const Eval_Params &params, const H &eval,
 	   const uint64_t seed = 0);
   
   void reset (const uint64_t seed = 0) override;
 
-  void set_params (const Eval_Params &new_params);
+  void set_params (const Eval_Params &new_params) override;
 
   // Always evaluating from the perspecive of the current person about to play.
   double negamax (const Board &board, size_t depth, double alpha, double beta);
