@@ -65,7 +65,7 @@ struct Board {
   
   // The number of empty squares in a specific subboard.
   size_t count_empty_squares (const size_t subboard) const;
-  // Total empty squares in the entire board.
+  // Total empty squares in the entire board. Skips completed boards.
   size_t count_total_empty_squares () const;
   int count_legal_moves () const;
 
@@ -78,4 +78,4 @@ std::vector<Board> load_positions (const std::string &filename, const size_t cou
 
 void update_translate_index (std::span<size_t> translate_index, const size_t inserted_location, std::string_view str);
 std::string to_string (const Board &board);
-std::ostream& operator<< (std::ostream &os, const Board board);
+std::ostream& operator<< (std::ostream &os, const Board &board);
