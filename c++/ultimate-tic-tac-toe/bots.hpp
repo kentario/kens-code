@@ -83,6 +83,13 @@ public:
 template <size_t max_depth, Heuristic H>
 class Negamax : public Bot {
 protected:
+  /*
+    Do this because the class cannot deduce the heuristic type, so it must be given explicitly.
+    This is done by passing in decltype(heuristic), where heuristic is a function
+    decltype(heuristic) is a function type, and members cannot be function types
+    But function types decay into function pointers, which is why errors usually don't happen.
+    But here, it needs to be done explicitly.
+  */
   using Fn = std::decay_t<H>;
   
   Eval_Params params;
