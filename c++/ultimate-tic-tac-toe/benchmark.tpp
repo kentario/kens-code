@@ -1,11 +1,16 @@
 #pragma once
 
+#include <iostream>
 #include <chrono>
 #include <string>
 #include <random>
 #include <span>
 #include <algorithm>
 #include <array>
+
+#include "game.hpp"
+#include "heuristic.hpp"
+#include "bots.hpp"
 
 template <Heuristic H>
 Benchmark_Result benchmark_heuristic (H h, const std::string &name, std::span<Board> positions) {
