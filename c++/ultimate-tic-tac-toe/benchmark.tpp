@@ -12,28 +12,6 @@
 #include "heuristic.hpp"
 #include "bots.hpp"
 
-template <Heuristic H>
-Benchmark_Result benchmark_heuristic (H h, const std::string &name, std::span<Board> positions) {
-  auto start = std::chrono::steady_clock::now();
-
-  for (const auto &p : positions) {
-    [[maybe_unused]] volatile double m {h(p, Eval_Params {})};
-  }
-  
-  auto end = std::chrono::steady_clock::now();
-  double ms {std::chrono::duration<double, std::milli>(end - start).count()};
-
-  return Benchmark_Result {
-    .name = name,
-    .positions = positions.size(),
-    .nodes = 0,
-    .cutoffs = 0,
-    .ms = ms,
-    .ms_per_position = ms/positions.size(),
-    .ms_per_node = 0
-  };
-}
-
 // For checking minimaxfull efficiency/validity.
 template <Bot_T B>
 // The bot must be able to do a full search.

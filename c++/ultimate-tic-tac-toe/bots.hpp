@@ -59,18 +59,15 @@ public:
   virtual Move pick_move (const Board &board) override;
 };
 
-template <size_t max_depth, Heuristic H>
+template <size_t max_depth, Heuristic eval>
 class Minimax : public Bot {
 protected:
-  using Fn = std::decay_t<H>;
-  
   Eval_Params params;
-  const Fn eval;
   std::mt19937 rng;
 
 public:
   Minimax (const std::string &name,
-	   const Eval_Params &params, const H &eval,
+	   const Eval_Params &params,
 	   const uint64_t seed = 0);
 
   void reset (const uint64_t seed = 0) override;
@@ -80,25 +77,15 @@ public:
   Move pick_move (const Board &board) override;
 };
 
-template <size_t max_depth, Heuristic H>
+template <size_t max_depth, Heuristic eval>
 class Negamax : public Bot {
 protected:
-  /*
-    Do this because the class cannot deduce the heuristic type, so it must be given explicitly.
-    This is done by passing in decltype(heuristic), where heuristic is a function
-    decltype(heuristic) is a function type, and members cannot be function types
-    But function types decay into function pointers, which is why errors usually don't happen.
-    But here, it needs to be done explicitly.
-  */
-  using Fn = std::decay_t<H>;
-  
   Eval_Params params;
-  const Fn eval;
   std::mt19937 rng;
 
 public:
   Negamax (const std::string &name,
-	   const Eval_Params &params, const H &eval,
+	   const Eval_Params &params,
 	   const uint64_t seed = 0);
   
   void reset (const uint64_t seed = 0) override;

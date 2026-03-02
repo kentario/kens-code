@@ -25,12 +25,7 @@ struct Eval_Params {
   double incomplete_subboard_weight {1};
 };
 
-template <typename F>
-concept Heuristic =
-  std::invocable<F, const Board&, const Eval_Params&> &&
-  std::convertible_to<
-    std::invoke_result_t<F, const Board&, const Eval_Params&>,
-    double>;
+using Heuristic = double(*)(const Board&, const Eval_Params&);
 
 /*
   Counts the number of winning moves by the first player on some tic-tac-toe board.

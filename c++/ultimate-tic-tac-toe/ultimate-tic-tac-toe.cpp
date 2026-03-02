@@ -19,8 +19,8 @@ std::string trim_space (const std::string &str) {
   return str.substr(i);
 }
 
-template <size_t max_depth, Heuristic H>
-void play_game_with_player (Negamax<max_depth, H> *bot, const size_t full_search_threshold, const Player player, Board &board) {
+template <size_t max_depth, Heuristic eval>
+void play_game_with_player (Negamax<max_depth, eval> *bot, const size_t full_search_threshold, const Player player, Board &board) {
   for (int i {0}; !board.terminal(); i++) {
     std::cout << board << '\n';
     Move move {};
@@ -65,8 +65,8 @@ void play_game_with_player (Negamax<max_depth, H> *bot, const size_t full_search
   std::cout << board << '\n';
 }
 
-template <size_t max_depth, Heuristic H>
-void play_game_with_player (Negamax<max_depth, H> *bot, const size_t full_search_threshold, const Player player, Board &&board = Board {}) {
+template <size_t max_depth, Heuristic eval>
+void play_game_with_player (Negamax<max_depth, eval> *bot, const size_t full_search_threshold, const Player player, Board &&board = Board {}) {
   play_game_with_player(bot, full_search_threshold, player, board);
 }
 
@@ -106,27 +106,27 @@ int main () {
     }
 */
 
-    Negamax<11, decltype(heur4)> bot_n {"negamax", Eval_Params {}, heur4, rng()};
-    play_game_with_player(&bot_n, 22, Player::X);
+    Negamax<11, heur4> bot_n {"negamax", Eval_Params {}, rng()};
+    //    play_game_with_player(&bot_n, 22, Player::X);
     //play_game(&bot_n, &bot_n, rng());
 
     std::vector<Bot*> bots;
-    bots.push_back(new Negamax<5, decltype(heur1)>("5h1", Eval_Params {}, heur1, rng()));
-    bots.push_back(new Negamax<5, decltype(heur2)>("5h2", Eval_Params {}, heur2, rng()));
-    bots.push_back(new Negamax<5, decltype(heur3)>("5h3", Eval_Params {}, heur3, rng()));
-    bots.push_back(new Negamax<5, decltype(heur4)>("5h4", Eval_Params {}, heur4, rng()));
-    bots.push_back(new Negamax<6, decltype(heur1)>("6h1", Eval_Params {}, heur1, rng()));
-    bots.push_back(new Negamax<6, decltype(heur2)>("6h2", Eval_Params {}, heur2, rng()));
-    bots.push_back(new Negamax<6, decltype(heur3)>("6h3", Eval_Params {}, heur3, rng()));
-    bots.push_back(new Negamax<6, decltype(heur4)>("6h4", Eval_Params {}, heur4, rng()));
-    bots.push_back(new Negamax<7, decltype(heur1)>("7h1", Eval_Params {}, heur1, rng()));
-    bots.push_back(new Negamax<7, decltype(heur2)>("7h2", Eval_Params {}, heur2, rng()));
-    bots.push_back(new Negamax<7, decltype(heur3)>("7h3", Eval_Params {}, heur3, rng()));
-    bots.push_back(new Negamax<7, decltype(heur4)>("7h4", Eval_Params {}, heur4, rng()));
+    bots.push_back(new Negamax<5, heur1>("5h1", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<5, heur2>("5h2", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<5, heur3>("5h3", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<5, heur4>("5h4", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<6, heur1>("6h1", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<6, heur2>("6h2", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<6, heur3>("6h3", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<6, heur4>("6h4", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<7, heur1>("7h1", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<7, heur2>("7h2", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<7, heur3>("7h3", Eval_Params {}, rng()));
+    bots.push_back(new Negamax<7, heur4>("7h4", Eval_Params {}, rng()));
 
     //    std::cout << simulate(bots, 10) << '\n';
     
-    Negamax<7, decltype(heur4)> full {"7h4", Eval_Params {}, heur4, rng()};
+    Negamax<7, heur4> full {"7h4", Eval_Params {}, rng()};
     test_full_search(rng, full);
     //    std::cout << benchmark_bot_move_generation(full, boards100k) << '\n';
     

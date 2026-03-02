@@ -113,6 +113,27 @@ Benchmark_Result benchmark_bot_nodes (Bot &bot, std::span<Board> positions) {
   };
 }
 
+Benchmark_Result benchmark_heuristic (Heuristic h, const std::string &name, std::span<Board> positions) {
+  auto start = std::chrono::steady_clock::now();
+
+  for (const auto &p : positions) {
+    [[maybe_unused]] volatile double m {h(p, Eval_Params {})};
+  }
+  
+  auto end = std::chrono::steady_clock::now();
+  double ms {std::chrono::duration<double, std::milli>(end - start).count()};
+
+  return Benchmark_Result {
+    .name = name,
+    .positions = positions.size(),
+    .nodes = 0,
+    .cutoffs = 0,
+    .ms = ms,
+    .ms_per_position = ms/positions.size(),
+    .ms_per_node = 0
+  };
+}
+
 Benchmark_Result benchmark_find_legal_moves (std::span<Board> positions) {
   auto start = std::chrono::steady_clock::now();
 

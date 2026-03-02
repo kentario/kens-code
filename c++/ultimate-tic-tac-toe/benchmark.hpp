@@ -30,8 +30,7 @@ Benchmark_Result benchmark_bot_move_generation (Bot &bot, std::span<Board> posit
 
 Benchmark_Result benchmark_bot_nodes (Bot &bot, std::span<Board> positions);
 
-template <Heuristic H>
-Benchmark_Result benchmark_heuristic (H h, const std::string &name, std::span<Board> positions);
+Benchmark_Result benchmark_heuristic (Heuristic h, const std::string &name, std::span<Board> positions);
 
 Benchmark_Result benchmark_find_legal_moves (std::span<Board> positions);
 
