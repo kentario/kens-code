@@ -33,7 +33,7 @@ std::ostream& operator<< (std::ostream &os, const Game_Record &game) {
   return os;
 }
 
-Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed) {
+Game_Record play_game (const Bot_ptr &p0, const Bot_ptr &p1, const uint64_t seed) {
   Game_Record game {p0->get_name(), p1->get_name(), seed};
 
   p0->reset(seed);
@@ -135,7 +135,7 @@ std::ostream& operator<< (std::ostream &os, const Tournament t) {
   return os;
 }
 
-Tournament simulate (const std::span<Bot* const> bots, const size_t games_per_pair) {
+Tournament simulate (const std::span<const Bot_ptr> bots, const size_t games_per_pair) {
   std::mt19937 seed_rng {std::random_device{}()};
   Tournament tournament {};
 

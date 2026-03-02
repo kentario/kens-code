@@ -110,24 +110,24 @@ int main () {
     //    play_game_with_player(&bot_n, 22, Player::X);
     //play_game(&bot_n, &bot_n, rng());
 
-    std::vector<Bot*> bots;
-    bots.push_back(new Negamax<5, heur1>("5h1", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<5, heur2>("5h2", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<5, heur3>("5h3", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<5, heur4>("5h4", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<6, heur1>("6h1", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<6, heur2>("6h2", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<6, heur3>("6h3", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<6, heur4>("6h4", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<7, heur1>("7h1", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<7, heur2>("7h2", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<7, heur3>("7h3", Eval_Params {}, rng()));
-    bots.push_back(new Negamax<7, heur4>("7h4", Eval_Params {}, rng()));
+    std::vector<Bot_ptr> bots;
+    bots.push_back(std::make_unique<Negamax<5, heur1>>("5h1", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<5, heur2>>("5h2", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<5, heur3>>("5h3", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<5, heur4>>("5h4", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<6, heur1>>("6h1", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<6, heur2>>("6h2", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<6, heur3>>("6h3", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<6, heur4>>("6h4", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<7, heur1>>("7h1", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<7, heur2>>("7h2", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<7, heur3>>("7h3", Eval_Params {}, rng()));
+    bots.push_back(std::make_unique<Negamax<7, heur4>>("7h4", Eval_Params {}, rng()));
 
-    //    std::cout << simulate(bots, 10) << '\n';
+    std::cout << simulate(bots, 10) << '\n';
     
     Negamax<7, heur4> full {"7h4", Eval_Params {}, rng()};
-    test_full_search(rng, full);
+    //test_full_search(rng, full);
     //    std::cout << benchmark_bot_move_generation(full, boards100k) << '\n';
     
     // std::cout << benchmark_heuristic(&heur1, "heur1", boards100k) << '\n';

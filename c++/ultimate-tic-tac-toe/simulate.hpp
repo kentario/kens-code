@@ -1,8 +1,9 @@
 #pragma once
 
-#include <chrono>
 #include <iostream>
+#include <chrono>
 #include <vector>
+#include <span>
 #include <string>
 #include <map>
 #include <utility>
@@ -26,7 +27,7 @@ struct Game_Record {
 
 std::ostream& operator<< (std::ostream &os, const Game_Record &game);
 
-Game_Record play_game (Bot *p0, Bot *p1, const uint64_t seed);
+Game_Record play_game (const Bot_ptr &p0, const Bot_ptr &p1, const uint64_t seed);
 
 // The player/bot going first is always the same in a match.
 // p0 goes first and p1 goes second.
@@ -86,4 +87,4 @@ struct Tournament {
 
 std::ostream& operator<< (std::ostream &os, const Tournament t);
 
-Tournament simulate (const std::span<Bot* const> bots, const size_t games_per_pair);
+Tournament simulate (const std::span<const Bot_ptr> bots, const size_t games_per_pair);

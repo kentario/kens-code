@@ -27,6 +27,8 @@ private:
   
 public:
   Search_Stats stats {};
+
+  Bot () = default;
   
   Bot (const std::string &name);
 
