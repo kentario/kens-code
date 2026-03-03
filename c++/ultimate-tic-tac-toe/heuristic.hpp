@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <concepts>
 #include <functional>
 #include <type_traits>
@@ -24,6 +25,8 @@ struct Eval_Params {
   // High numbers should prioritize dominating specific boards, while low nubmers should mean that the state of specific incomplete subboards doesn't matter as much.
   double incomplete_subboard_weight {1};
 };
+
+std::ostream& operator<< (std::ostream &os, const Eval_Params);
 
 using Heuristic = double(*)(const Board&, const Eval_Params&);
 

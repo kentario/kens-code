@@ -1,12 +1,26 @@
 #include "heuristic.hpp"
 
+#include <iostream>
 #include <span>
+#include <optional>
 #include <algorithm>
 #include <bit>
-#include <optional>
 
 #include "constants.hpp"
 #include "game.hpp"
+
+std::ostream& operator<< (std::ostream &os, const Eval_Params params) {
+  os << "{" << std::endl;
+  os << "    center: " << params.center << std::endl;
+  os << "    corner: " << params.corner << std::endl;
+  os << "    edge: " << params.edge << std::endl;
+  os << "    move_weight: " << params.move_weight << std::endl;
+  os << "    win_options_weight: " << params.win_options_weight << std::endl;
+  os << "    incomplete_subboard_weight: " << params.incomplete_subboard_weight << std::endl;
+  os << "}";
+  
+  return os;
+}
 
 // Counts the number of winning moves by the first player on some tic-tac-toe board.
 // Could be a macroboard, or could be a subboard.
