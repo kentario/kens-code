@@ -24,24 +24,28 @@ struct Search_Stats {
 class Bot {
 private:
   const std::string name {};
-  
+
+protected:
+  Eval_Params params {};
+
 public:
   Search_Stats stats {};
 
   Bot () = default;
   
-  Bot (const std::string &name);
+  Bot (const std::string &name, const Eval_Params params = Eval_Params {});
 
   virtual ~Bot () = default;
 
   // Returns the move that it wants to play
   // Would clear anything cached and other stuff, and also sets the seed.
   virtual void reset (const uint64_t seed = 0);
-  virtual void set_params (const Eval_Params &new_params);
   
   virtual Move pick_move (const Board &board) = 0;
 
   std::string get_name () const;
+  void set_params (const Eval_Params &new_params);
+  Eval_Params get_params () const;
 };
 
 template <typename T>
@@ -64,7 +68,6 @@ public:
 template <size_t max_depth, Heuristic eval>
 class Minimax : public Bot {
 protected:
-  Eval_Params params;
   std::mt19937 rng;
 
 public:
@@ -73,7 +76,6 @@ public:
 	   const uint64_t seed = 0);
 
   void reset (const uint64_t seed = 0) override;
-  void set_params (const Eval_Params &new_params) override;
   
   double minimax (const Board &board, size_t depth, double alpha, double beta);
   Move pick_move (const Board &board) override;
@@ -82,7 +84,6 @@ public:
 template <size_t max_depth, Heuristic eval>
 class Negamax : public Bot {
 protected:
-  Eval_Params params;
   std::mt19937 rng;
 
 public:
@@ -91,8 +92,6 @@ public:
 	   const uint64_t seed = 0);
   
   void reset (const uint64_t seed = 0) override;
-
-  void set_params (const Eval_Params &new_params) override;
 
   // Always evaluating from the perspecive of the current person about to play.
   double negamax (const Board &board, size_t depth, double alpha, double beta);

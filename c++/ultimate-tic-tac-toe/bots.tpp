@@ -19,18 +19,13 @@ template <size_t max_depth, Heuristic eval>
 Minimax<max_depth, eval>::Minimax (const std::string &name,
 		     const Eval_Params params,
 		     const uint64_t seed) :
-  Bot {name}, params {params}, rng {seed} {}
+  Bot {name, params}, rng {seed} {}
 
 template <size_t max_depth, Heuristic eval>
 void Minimax<max_depth, eval>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
   params = Eval_Params {};
-}
-
-template <size_t max_depth, Heuristic eval>
-void Minimax<max_depth, eval>::set_params (const Eval_Params &new_params) {
-  params = new_params;
 }
 
 template <size_t max_depth, Heuristic eval>
@@ -97,18 +92,13 @@ template <size_t max_depth, Heuristic eval>
 Negamax<max_depth, eval>::Negamax (const std::string &name,
 		     const Eval_Params params,
 		     const uint64_t seed) :
-  Bot {name}, params {params}, rng {seed} {}
+  Bot {name, params}, rng {seed} {}
 
 template <size_t max_depth, Heuristic eval>
 void Negamax<max_depth, eval>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
   params = Eval_Params {};
-}
-
-template <size_t max_depth, Heuristic eval>
-void Negamax<max_depth, eval>::set_params (const Eval_Params &new_params) {
-  params = new_params;
 }
 
 template <size_t max_depth, Heuristic eval>

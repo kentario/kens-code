@@ -5,14 +5,16 @@
 #include <string>
 
 #include "game.hpp"
+#include "heuristic.hpp"
 
-Bot::Bot (const std::string &name) :
-    name {name} {}
+Bot::Bot (const std::string &name, const Eval_Params params) :
+  name {name}, params {params} {}
 
 // Would clear anything cached and other stuff, and also sets the seed.
 void Bot::reset (const uint64_t) {}
-void Bot::set_params (const Eval_Params &new_params) {}
 std::string Bot::get_name () const { return name; }
+void Bot::set_params (const Eval_Params &new_params) { params = new_params; }
+Eval_Params Bot::get_params () const { return params; }
 
 Random::Random (const std::string &name, const uint64_t seed) :
   Bot {name}, rng {seed} {}
