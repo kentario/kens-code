@@ -68,6 +68,7 @@ std::ostream& operator<< (std::ostream &os, const Benchmark_Result &res) {
   os << "    searched " << res.nodes << " nodes and pruned " << res.cutoffs << " times" << std::endl;
   os << "    " << res.ms_per_node << " ms per node" << std::endl;
   os << "}";
+  
   return os;
 };
 
