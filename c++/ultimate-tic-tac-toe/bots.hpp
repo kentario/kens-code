@@ -69,7 +69,7 @@ protected:
 
 public:
   Minimax (const std::string &name,
-	   const Eval_Params &params,
+	   const Eval_Params params = Eval_Params {},
 	   const uint64_t seed = 0);
 
   void reset (const uint64_t seed = 0) override;
@@ -87,7 +87,7 @@ protected:
 
 public:
   Negamax (const std::string &name,
-	   const Eval_Params &params,
+	   const Eval_Params params = Eval_Params {},
 	   const uint64_t seed = 0);
   
   void reset (const uint64_t seed = 0) override;

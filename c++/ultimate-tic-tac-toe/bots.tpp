@@ -17,7 +17,7 @@
 
 template <size_t max_depth, Heuristic eval>
 Minimax<max_depth, eval>::Minimax (const std::string &name,
-		     const Eval_Params &params,
+		     const Eval_Params params,
 		     const uint64_t seed) :
   Bot {name}, params {params}, rng {seed} {}
 
@@ -95,7 +95,7 @@ Move Minimax<max_depth, eval>::pick_move (const Board &board) {
 
 template <size_t max_depth, Heuristic eval>
 Negamax<max_depth, eval>::Negamax (const std::string &name,
-		     const Eval_Params &params,
+		     const Eval_Params params,
 		     const uint64_t seed) :
   Bot {name}, params {params}, rng {seed} {}
 
