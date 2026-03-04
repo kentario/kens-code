@@ -34,17 +34,22 @@ constexpr std::array<uint16_t, 9> MOVE_MASKS {
 };
 
 // TWO_IN_A_ROW[square] => the other squares that would need to be filled in order to get a 3 in a row
-const std::array<std::vector<uint16_t>, 9> TWO_IN_A_ROWS {{
-    {0b011000000, 0b000100100, 0b000010001},
-    {0b101000000, 0b000010010},
-    {0b110000000, 0b000001001, 0b000010100},
-    {0b100000100, 0b000011000},
+constexpr size_t MAX_TWO_IN_A_ROWS_PER_SQUARE {4};
+constexpr std::array<std::array<uint16_t, MAX_TWO_IN_A_ROWS_PER_SQUARE>, 9> TWO_IN_A_ROWS_ARR {{
+    {0b011000000, 0b000100100, 0b000010001, 0},
+    {0b101000000, 0b000010010, 0, 0},
+    {0b110000000, 0b000001001, 0b000010100, 0},
+    {0b100000100, 0b000011000, 0, 0},
     {0b100000001, 0b010000010, 0b001000100, 0b000101000},
-    {0b001000001, 0b000110000},
-    {0b100100000, 0b000000011, 0b001010000},
-    {0b010010000, 0b000000101},
-    {0b100010000, 0b001001000, 0b000000110}
+    {0b001000001, 0b000110000, 0, 0},
+    {0b100100000, 0b000000011, 0b001010000, 0},
+    {0b010010000, 0b000000101, 0, 0},
+    {0b100010000, 0b001001000, 0b000000110, 0}
   }
+};
+// So that I know to ignore the 0s in the above array.
+constexpr std::array<size_t, 9> TWO_IN_A_ROW_COUNTS {
+  3, 2, 3, 2, 4, 2, 3, 2, 3
 };
 
 constexpr uint16_t FULL_BOARD {

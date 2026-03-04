@@ -24,13 +24,14 @@ std::ostream& operator<< (std::ostream &os, const Eval_Params params) {
 
 // Counts the number of winning moves by the first player on some tic-tac-toe board.
 // Could be a macroboard, or could be a subboard.
-size_t count_winning_moves (const uint16_t a, const uint16_t b) {
+size_t count_winning_moves_b (const uint16_t a, const uint16_t b) {
   size_t count {0};
 
   // For each empty square, count the number of filled two in a rows that correspond to it.
   for (const uint8_t square_i : Board::empty_squares[a | b]) {
     // For each 2 in a row corresponding with the empty square,
-    for (const uint16_t two_in_a_row : TWO_IN_A_ROWS[square_i]) {
+    for (size_t j {0}; j < TWO_IN_A_ROW_COUNTS[square_i]; j++) {
+      const uint16_t two_in_a_row {TWO_IN_A_ROWS_ARR[square_i][j]};
       // Check if it is filled by the player that is being counted.
       if ((two_in_a_row & a) == two_in_a_row) count++;
     }
