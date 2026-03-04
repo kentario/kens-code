@@ -139,8 +139,9 @@ Tournament simulate (const std::span<const Bot_ptr> bots, const size_t games_per
   Tournament tournament {};
 
   for (const auto &a : bots) {
+    //    std::cout << "starting games for " << a->get_name() << " going first\n";
     for (const auto &b : bots) {
-      std::cout << "starting games for " << a->get_name() << " vs " << b->get_name() << '\n';
+      //      std::cout << "starting games for " << a->get_name() << " vs " << b->get_name() << '\n';
       for (size_t i {0}; i < games_per_pair; i++) {
 	//	std::cout << i << ' ' << std::flush;
 	tournament += play_game(a, b, seed_rng());

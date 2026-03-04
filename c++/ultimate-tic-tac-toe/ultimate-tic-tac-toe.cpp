@@ -124,7 +124,7 @@ int main () {
     bots.push_back(std::make_unique<Negamax<7, heur3>>("7h3", Eval_Params {}, rng()));
     bots.push_back(std::make_unique<Negamax<7, heur4>>("7h4", Eval_Params {}, rng()));
 
-    std::cout << simulate(bots, 10) << '\n';
+    //    std::cout << simulate(bots, 10) << '\n';
     
     Negamax<7, heur4> full {"7h4", Eval_Params {}, rng()};
     //test_full_search(rng, full);
@@ -134,6 +134,8 @@ int main () {
     // std::cout << benchmark_heuristic(&heur2, "heur2", boards100k) << '\n';
     // std::cout << benchmark_heuristic(&heur3, "heur3", boards100k) << '\n';
     // std::cout << benchmark_heuristic(&heur4, "heur4", boards100k) << '\n';
+
+    evolve_eval_params_for_bot<Negamax<5, heur3>>(100, 12);
 
   } catch (const std::exception &e) {
     std::cerr << e.what();
