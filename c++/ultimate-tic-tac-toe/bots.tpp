@@ -25,7 +25,6 @@ template <size_t max_depth, Heuristic eval>
 void Minimax<max_depth, eval>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
-  params = Eval_Params {};
 }
 
 template <size_t max_depth, Heuristic eval>
@@ -98,7 +97,6 @@ template <size_t max_depth, Heuristic eval>
 void Negamax<max_depth, eval>::reset (const uint64_t seed) {
   rng.seed(seed);
   stats = Search_Stats {};
-  params = Eval_Params {};
 }
 
 template <size_t max_depth, Heuristic eval>

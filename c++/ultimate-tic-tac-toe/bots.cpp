@@ -11,6 +11,7 @@ Bot::Bot (const std::string &name, const Eval_Params params) :
   name {name}, params {params} {}
 
 // Would clear anything cached and other stuff, and also sets the seed.
+// Should not reset eval params.
 void Bot::reset (const uint64_t) {}
 std::string Bot::get_name () const { return name; }
 void Bot::set_params (const Eval_Params &new_params) { params = new_params; }
