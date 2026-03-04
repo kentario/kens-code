@@ -12,4 +12,5 @@ add_executable(ultimate-tic-tac-toe
 	bots.cpp
 	benchmark.cpp
 	simulate.cpp
+	tune.cpp
 )
