@@ -1,4 +1,4 @@
-build: array
+build: print
 
-array: array.cpp
+print: print.cpp
 	g++ -g $< -o $@ -Wall -Wextra -std=c++23
