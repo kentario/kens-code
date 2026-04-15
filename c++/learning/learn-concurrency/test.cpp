@@ -10,6 +10,10 @@ void test (int x) {
 }
 
 int main () {
+  auto lambda = [](int x) {
+    
+  };
+  
   std::thread my_thread (test, 100);
   // Wait for my_thread to finish.
   // If it isn't done when it goes out of scope, bad things happen.
