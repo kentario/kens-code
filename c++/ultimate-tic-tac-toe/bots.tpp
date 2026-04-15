@@ -135,7 +135,7 @@ Move Negamax<max_depth, eval>::pick_move (const Board &board) {
   for (size_t i {0}; i < moves.size(); i++) {
     double value {-negamax(board.play_move_unsafe_value(moves[i]), max_depth - 1, -DBL_MAX, DBL_MAX)};
 
-    //      std::cout << moves[i] << ": " << value << '\n';
+    //    std::cout << moves[i] << ": " << value << '\n';
 
     if (value > best_move.second) best_move = {i, value};
   }
@@ -174,7 +174,7 @@ Move Negamax<max_depth, eval>::pick_move_full (const Board &board) {
   constexpr size_t ply {0};
   for (size_t i {0}; i < moves.size(); i++) {
     double value {-full_search(board.play_move_unsafe_value(moves[i]), ply + 1, -DBL_MAX, DBL_MAX)};
-    std::cout << moves[i] << ": " << value << '\n';
+    //    std::cout << moves[i] << ": " << value << '\n';
 
     if (value > best_move.second) best_move = {i, value};
   }

@@ -63,5 +63,6 @@ int check_winner (const Board &board, const size_t ply);
 double heur1 (const Board &board, [[maybe_unused]] const Eval_Params &params);
 double heur2 (const Board &board, const Eval_Params &params);
 double heur3 (const Board &board, const Eval_Params &params);
-// Maybe faster version of heur3
+// Faster version of heur3, but slightly worse.
 double heur4 (const Board &board, const Eval_Params &params);
+double heur5 (const Board &board, const Eval_Params &params);

@@ -24,7 +24,7 @@ std::ostream& operator<< (std::ostream &os, const Eval_Params params) {
 
 // Counts the number of winning moves by the first player on some tic-tac-toe board.
 // Could be a macroboard, or could be a subboard.
-size_t count_winning_moves_b (const uint16_t a, const uint16_t b) {
+size_t count_winning_moves (const uint16_t a, const uint16_t b) {
   size_t count {0};
 
   // For each empty square, count the number of filled two in a rows that correspond to it.
@@ -98,9 +98,19 @@ double heur3 (const Board &board, const Eval_Params &params) {
 }
 
 // Maybe faster version of heur3
+// not much faster.
 double heur4 (const Board &board, const Eval_Params &params) {
   if (auto t = terminal_check(board)) return *t;
 
   // If the move can be any board, that is good.
   return subboard_values_simple(board, params) + params.move_weight * sign(board.next_player()) * (board.forced_sb == ANY_SUBBOARD ? 50 : 4);
+}
+
+double heur5 (const Board &board, const Eval_Params &params) {
+  if (auto t = terminal_check(board)) return *t;
+
+  return subboard_values_simple(board, params) +
+    params.move_weight * sign(board.next_player()) * board.count_legal_moves() -
+    count_winning_moves(board.macroboards[to_index(Role::MIN)], static_cast<uint16_t>(board.macroboards[to_index(Role::MAX)] | board.macroboards[2])) +
+    count_winning_moves(board.macroboards[to_index(Role::MAX)], static_cast<uint16_t>(board.macroboards[to_index(Role::MIN)] | board.macroboards[2]));
 }

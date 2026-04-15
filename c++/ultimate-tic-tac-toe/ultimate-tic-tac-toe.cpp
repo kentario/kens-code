@@ -106,11 +106,12 @@ int main () {
     }
 */
 
-    Negamax<11, heur4> bot_n {"negamax", Eval_Params {}, rng()};
-    //    play_game_with_player(&bot_n, 22, Player::X);
+    Negamax<12, heur3> bot_n {"negamax", Eval_Params {}, rng()};
+    //play_game_with_player(&bot_n, 22, Player::X);
     //play_game(&bot_n, &bot_n, rng());
 
     std::vector<Bot_ptr> bots;
+    
     bots.push_back(std::make_unique<Negamax<5, heur1>>("5h1", Eval_Params {}, rng()));
     bots.push_back(std::make_unique<Negamax<5, heur2>>("5h2", Eval_Params {}, rng()));
     bots.push_back(std::make_unique<Negamax<5, heur3>>("5h3", Eval_Params {}, rng()));
@@ -125,17 +126,27 @@ int main () {
     bots.push_back(std::make_unique<Negamax<7, heur4>>("7h4", Eval_Params {}, rng()));
 
     //    std::cout << simulate(bots, 10) << '\n';
-    
-    Negamax<7, heur4> full {"7h4", Eval_Params {}, rng()};
-    //test_full_search(rng, full);
-    //    std::cout << benchmark_bot_move_generation(full, boards100k) << '\n';
-    
-    // std::cout << benchmark_heuristic(&heur1, "heur1", boards100k) << '\n';
-    // std::cout << benchmark_heuristic(&heur2, "heur2", boards100k) << '\n';
-    // std::cout << benchmark_heuristic(&heur3, "heur3", boards100k) << '\n';
-    // std::cout << benchmark_heuristic(&heur4, "heur4", boards100k) << '\n';
 
-    evolve_eval_params_for_bot<Negamax<5, heur3>>(100, 12);
+    /*
+      Benchmarking how far a full search can go.
+    Negamax<7, heur4> full {"7h4", Eval_Params {}, rng()};
+    test_full_search(rng, full);
+    std::cout << benchmark_bot_move_generation(full, boards100k) << '\n';
+    */
+
+    /*
+      Benchmarking speed of alternate heuristics.
+    std::cout << benchmark_heuristic(heur3, "h3", boards100k) << '\n';
+    std::cout << benchmark_heuristic(heur4, "h4", boards100k) << '\n';
+    auto a = Negamax<3, heur3> {"4h3", Eval_Params {}, rng()};
+    auto b = Negamax<3, heur4> {"4h4", Eval_Params {}, rng()};
+    auto c = Negamax<3, heur5> {"4h5", Eval_Params {}, rng()};
+    std::cout << benchmark_bot_move_generation(a, boards100k) << '\n';
+    std::cout << benchmark_bot_move_generation(b, boards100k) << '\n';
+    std::cout << benchmark_bot_move_generation(c, boards100k) << '\n';
+    */
+
+    //    evolve_eval_params_for_bot<Negamax<5, heur3>>(100, 12);
 
   } catch (const std::exception &e) {
     std::cerr << e.what();
