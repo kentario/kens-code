@@ -100,7 +100,7 @@ void Negamax<max_depth, eval>::reset (const uint64_t seed) {
 }
 
 template <size_t max_depth, Heuristic eval>
-double Negamax<max_depth, eval>::negamax (const Board &board, size_t depth, double alpha, double beta) {
+double Negamax<max_depth, eval>::negamax (Board &board, size_t depth, double alpha, double beta) {
   stats.nodes++;
   // Always returns from the perspective of the current player.
   // Multiplies by -1 if the player is min, as then small (good) numbers become big.
@@ -111,7 +111,9 @@ double Negamax<max_depth, eval>::negamax (const Board &board, size_t depth, doub
   double value {-DBL_MAX};
   for (const Move m : moves) {
     // -negamax because what is high (good) for the other player should be bad (low) for the current player.
-    value = std::max(value, -negamax(board.play_move_unsafe_value(m), depth - 1, -beta, -alpha));
+    board.play_move_unsafe(m);
+    value = std::max(value, -negamax(board, depth - 1, -beta, -alpha));
+    board.undo_move();
     alpha = std::max(alpha, value);
     if (alpha >= beta) {
       stats.cutoffs++;
@@ -123,8 +125,9 @@ double Negamax<max_depth, eval>::negamax (const Board &board, size_t depth, doub
 }
 
 template <size_t max_depth, Heuristic eval>
-Move Negamax<max_depth, eval>::pick_move (const Board &board) {
-  if (board.terminal()) return {9, 9};
+Move Negamax<max_depth, eval>::pick_move (const Board &board_i) {
+  if (board_i.terminal()) return {9, 9};
+  auto board = board_i;
 
   std::vector<Move> moves {board.legal_moves()};
   std::shuffle(moves.begin(), moves.end(), rng);
@@ -133,7 +136,9 @@ Move Negamax<max_depth, eval>::pick_move (const Board &board) {
   // Vice versa for O.
   std::pair<size_t, double> best_move {-1, -DBL_MAX};
   for (size_t i {0}; i < moves.size(); i++) {
-    double value {-negamax(board.play_move_unsafe_value(moves[i]), max_depth - 1, -DBL_MAX, DBL_MAX)};
+    board.play_move_unsafe(moves[i]);
+    double value {-negamax(board, max_depth - 1, -DBL_MAX, DBL_MAX)};
+    board.undo_move();
 
     //    std::cout << moves[i] << ": " << value << '\n';
 
@@ -144,7 +149,7 @@ Move Negamax<max_depth, eval>::pick_move (const Board &board) {
 }
 
 template <size_t max_depth, Heuristic eval>
-double Negamax<max_depth, eval>::full_search (const Board &board, const size_t ply, double alpha, double beta) {
+double Negamax<max_depth, eval>::full_search (Board &board, const size_t ply, double alpha, double beta) {
   // ply is the distance to the root node.
   stats.nodes++;
   if (board.terminal()) return check_winner(board, ply) * sign(board.next_player());
@@ -153,7 +158,9 @@ double Negamax<max_depth, eval>::full_search (const Board &board, const size_t p
 
   double value {-DBL_MAX};
   for (const Move m : moves) {
-    value = std::max(value, -full_search(board.play_move_unsafe_value(m), ply + 1, -beta, -alpha));
+    board.play_move_unsafe(m);
+    value = std::max(value, -full_search(board, ply + 1, -beta, -alpha));
+    board.undo_move();
     alpha = std::max(alpha, value);
     if (alpha >= beta) {
       stats.cutoffs++;
@@ -165,15 +172,19 @@ double Negamax<max_depth, eval>::full_search (const Board &board, const size_t p
 }
 
 template <size_t max_depth, Heuristic eval>
-Move Negamax<max_depth, eval>::pick_move_full (const Board &board) {
-  if (board.terminal()) return {9, 9};
+Move Negamax<max_depth, eval>::pick_move_full (const Board &board_i) {
+  if (board_i.terminal()) return {9, 9};
+
+  auto board = board_i;
 
   std::vector<Move> moves {board.legal_moves()};
   std::pair<size_t, double> best_move {-1, -DBL_MAX};
   // Currently at root node.
   constexpr size_t ply {0};
   for (size_t i {0}; i < moves.size(); i++) {
-    double value {-full_search(board.play_move_unsafe_value(moves[i]), ply + 1, -DBL_MAX, DBL_MAX)};
+    board.play_move_unsafe(moves[i]);
+    double value {-full_search(board, ply + 1, -DBL_MAX, DBL_MAX)};
+    board.undo_move();
     //    std::cout << moves[i] << ": " << value << '\n';
 
     if (value > best_move.second) best_move = {i, value};

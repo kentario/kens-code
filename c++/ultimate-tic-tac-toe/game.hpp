@@ -14,8 +14,8 @@
 #include "constants.hpp"
 
 struct Move {
-  size_t subboard {};
-  size_t square {};
+  uint8_t subboard {};
+  uint8_t square {};
 };
 
 bool operator== (const Move a, const Move b);
@@ -33,6 +33,8 @@ struct Squares_List {
 };
 
 struct Board {
+  std::array<Move, 81> moves_played_vector {};
+  
   // For both, [0] => X, [1] => O, and for macroboards, [2] => draw
   // 9 boards, left to right top to bottom, and 1 for each player.
   // 0b100000000 is just the top left cell
@@ -60,6 +62,7 @@ struct Board {
   Board play_move_unsafe_value (const Move move) const;
   // Returns whether the move succeeded.
   bool play_move (const Move move);
+  void undo_move ();
   
   std::vector<Move> legal_moves () const;
   
@@ -71,7 +74,12 @@ struct Board {
 
   static void pre_generate_legal_moves (const bool overwrite);
 };
-static_assert(sizeof(Board) == 2 * 9 * 2 + 2 * 3 + 1 + 1);
+static_assert(sizeof(Board) == sizeof(std::array<Move, 81>) + 2 * 9 * 2 + 2 * 3 + 1 + 1);
+// moves_played_vector
+// subboards 2x9 array, 2 bytes/uint16_t
+// macroboards 3 array, 2 bytes/uint16_t
+// forced_sb 1 byte/uint8_t
+// moves_played 1 byte/uint8_t
 
 void save_positions (const std::string &filename, const Board board[], const size_t count, const bool append);
 std::vector<Board> load_positions (const std::string &filename, const size_t count);

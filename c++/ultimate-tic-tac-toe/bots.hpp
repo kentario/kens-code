@@ -94,11 +94,11 @@ public:
   void reset (const uint64_t seed = 0) override;
 
   // Always evaluating from the perspecive of the current person about to play.
-  double negamax (const Board &board, size_t depth, double alpha, double beta);
+  double negamax (Board &board, size_t depth, double alpha, double beta);
 
   Move pick_move (const Board &board) override;
 
-  double full_search (const Board &board, const size_t ply, double alpha, double beta);
+  double full_search (Board &board, const size_t ply, double alpha, double beta);
   
   Move pick_move_full (const Board &board);
 };

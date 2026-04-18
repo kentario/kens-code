@@ -18,11 +18,11 @@ bool operator== (const Move a, const Move b) {
 }
 
 std::string to_string (const Move move) {
-  return std::to_string(move.subboard) + " " + std::to_string(move.square);
+  return "(" + std::to_string(move.subboard) + " " + std::to_string(move.square) + ")";
 }
 
 std::ostream& operator<< (std::ostream &os, const Move move) {
-  return os << '(' << move.subboard << ' ' << move.square << ')';
+  return os << to_string(move);
 }
 
 Squares_List& Squares_List::push_back (const uint8_t m) {
@@ -84,7 +84,9 @@ void Board::update_subboard_state (const size_t subboard) {
   // No wins detected on the subboard.
   // Check for a draw.
   // Draw occurs when all squares of a subboard have been taken.
-  if ((subboards[subboard][to_index(Player::X)] | subboards[subboard][to_index(Player::O)]) == FULL_BOARD) macroboards[2] |= MOVE_MASKS[subboard];
+  if ((subboards[subboard][to_index(Player::X)] | subboards[subboard][to_index(Player::O)]) == FULL_BOARD) {
+    macroboards[2] |= MOVE_MASKS[subboard];
+  }
 }
 
 void Board::play_move_unsafe (const Move move) {
@@ -96,7 +98,8 @@ void Board::play_move_unsafe (const Move move) {
   // Otherwise it has to be on subboard corresponding to the square played on.
   if (board_completed(move.square)) forced_sb = ANY_SUBBOARD;
   else forced_sb = move.square;
-  
+
+  moves_played_vector[moves_played] = move;
   moves_played++;
 }
 
@@ -115,6 +118,29 @@ bool Board::play_move (const Move move) {
   }
 
   return false;
+}
+
+void Board::undo_move () {
+  if (moves_played <= 0) return;
+
+  Player player_played {other(next_player())};
+  Move move_undone {moves_played_vector[moves_played - 1]};
+  // To erase a certain bit of a subboard  (this resets the square state),
+  // AND the subboard with all 1s except a 0 at the index of the square
+  // to get this, do ~MOVE_MASK
+  subboards[move_undone.subboard][to_index(player_played)] &= ~MOVE_MASKS[move_undone.square];
+  if (board_completed(move_undone.subboard)) {
+    // If the board played on is completed, then it should be uncompleted.
+    // Same logic as squares with erasing macroboard (subboard states).
+    macroboards[to_index(player_played)] &= ~MOVE_MASKS[move_undone.subboard];
+    // Always erase draws just in case.
+    macroboards[2] &= ~MOVE_MASKS[move_undone.subboard];
+  }
+  moves_played--;
+
+  if (!moves_played &&
+      board_completed(moves_played_vector[moves_played - 1].square)) forced_sb = ANY_SUBBOARD;
+  else forced_sb = moves_played_vector[moves_played - 1].square;
 }
 
 std::vector<Move> Board::legal_moves () const {
