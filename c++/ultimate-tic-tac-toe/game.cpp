@@ -72,12 +72,12 @@ bool Board::is_legal (const Move move) const {
 // Updates the state of a subboard stored in the macroboard after a certain move is played.
 void Board::update_subboard_state (const size_t subboard) {
   for (const auto mask : WIN_MASKS) {
-    for (size_t player {0}; player < 2; player++) {
-      // Win detected if everything under the mask is a 1, or in other words all squares required for a win are taken.
-      if ((mask & subboards[subboard][player]) == mask) {
-	macroboards[player] |= MOVE_MASKS[subboard];
-	return;
-      }
+    // Win detected if everything under the mask is a 1, or in other words all squares required for a win are taken.
+    // Only the player who just played could have won a board.
+    auto player = to_index(other(next_player()));
+    if ((mask & subboards[subboard][player]) == mask) {
+      macroboards[player] |= MOVE_MASKS[subboard];
+      return;
     }
   }
   
