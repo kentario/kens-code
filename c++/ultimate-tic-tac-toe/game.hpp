@@ -48,8 +48,6 @@ struct Board {
   // The last bit of moves played will be 0 = X when moves played is even.
   // To get the next player, just do moves_played & 1.
   uint8_t moves_played {0};
-
-  static std::array<Squares_List, 512> empty_squares;
   
   Player next_player () const;
   bool terminal () const;
@@ -72,7 +70,13 @@ struct Board {
   size_t count_total_empty_squares () const;
   int count_legal_moves () const;
 
+  // Indexed by a uint16_t which has a 1 at every taken square. x | o.
+  // Value at each index is a list of the index of each empty square.
+  // 512 = 2^9, every possible board where x and 0 doesn't matter.
+  static std::array<Squares_List, 512> empty_squares;
+  // Initializes empty_squares.
   static void pre_generate_legal_moves (const bool overwrite);
+  //  static void pre_generate_move_results (const bool overwrite);
 };
 static_assert(sizeof(Board) == sizeof(std::array<Move, 81>) + 2 * 9 * 2 + 2 * 3 + 1 + 1);
 // moves_played_vector
